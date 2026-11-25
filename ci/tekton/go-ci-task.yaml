@@ -1,0 +1,125 @@
+# Tekton v1 Task wrapping the portable scafctl Go CI workflow.
+#
+# Apply:
+#   kubectl apply -f ci/tekton/go-ci-task.yaml
+#
+# The same ci/go-ci/actions.yaml definition runs locally, in GitHub Actions,
+# and inside this Tekton Task without duplicating Go check logic.
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: scafctl-go-ci
+  labels:
+    app.kubernetes.io/part-of: go-ci
+    ci.oakwood-commons.io/runner: scafctl
+spec:
+  description: >-
+    Execute the portable scafctl Go CI pipeline (gofmt, go vet, golangci-lint,
+    gosec, go test -race with coverage threshold, and go build) inside a shared
+    repository workspace.
+  workspaces:
+    - name: source
+      description: Workspace containing the checked-out Go repository and ci/go-ci/actions.yaml
+  params:
+    - name: actions-file
+      type: string
+      description: Relative path to the scafctl Go CI actions file inside the workspace
+      default: ci/go-ci/actions.yaml
+    - name: workdir
+      type: string
+      description: Go module directory to test and build (relative to workspace root)
+      default: "."
+    - name: build-pkg
+      type: string
+      description: Go package pattern to compile
+      default: "./..."
+    - name: min-coverage
+      type: string
+      description: Minimum statement coverage percentage (0-100)
+      default: "70"
+    - name: race
+      type: string
+      description: Enable Go race detector when a C compiler is present
+      default: "true"
+    - name: run-lint
+      type: string
+      description: Run golangci-lint static checks
+      default: "true"
+    - name: run-gosec
+      type: string
+      description: Run gosec static security scan
+      default: "true"
+    - name: scafctl-version
+      type: string
+      description: Release version of oakwood-commons/scafctl (without leading v) to install when not pre-baked
+      default: "0.47.0"
+    - name: go-image
+      type: string
+      description: Container image providing Go, git, curl, and tar
+      default: golang:1.26-bookworm
+  steps:
+    - name: run-scafctl-go-ci
+      image: $(params.go-image)
+      workingDir: $(workspaces.source.path)
+      env:
+        - name: HOME
+          value: /tekton/home
+        - name: GOPATH
+          value: $(workspaces.source.path)/.cache/gopath
+        - name: GOCACHE
+          value: $(workspaces.source.path)/.cache/gocache
+        - name: GOLANGCI_LINT_CACHE
+          value: $(workspaces.source.path)/.cache/golangci-lint
+        - name: ACTIONS_FILE
+          value: $(params.actions-file)
+        - name: WORKDIR
+          value: $(params.workdir)
+        - name: BUILD_PKG
+          value: $(params.build-pkg)
+        - name: MIN_COVERAGE
+          value: $(params.min-coverage)
+        - name: ENABLE_RACE
+          value: $(params.race)
+        - name: RUN_LINT
+          value: $(params.run-lint)
+        - name: RUN_GOSEC
+          value: $(params.run-gosec)
+        - name: SCAFCTL_VERSION
+          value: $(params.scafctl-version)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+
+        TOOLS_BIN="$(pwd)/.tool/bin"
+        mkdir -p "$TOOLS_BIN" "$GOPATH" "$GOCACHE" "$GOLANGCI_LINT_CACHE"
+        export PATH="$TOOLS_BIN:$PATH"
+
+        if ! command -v scafctl >/dev/null 2>&1; then
+          ARCH="$(uname -m)"
+          case "$ARCH" in
+            x86_64|amd64) SCAFCTL_ARCH="x86_64" ;;
+            aarch64|arm64) SCAFCTL_ARCH="arm64" ;;
+            *) echo "Unsupported architecture: $ARCH" >&2; exit 1 ;;
+          esac
+
+          VER="${SCAFCTL_VERSION#v}"
+          DOWNLOAD_URL="https://github.com/oakwood-commons/scafctl/releases/download/v${VER}/scafctl_${VER}_Linux_${SCAFCTL_ARCH}.tar.gz"
+
+          (
+            TMP_DIR="$(mktemp -d)"
+            trap 'rm -rf "$TMP_DIR"' EXIT
+            curl -fsSL "$DOWNLOAD_URL" -o "${TMP_DIR}/scafctl.tar.gz"
+            tar -xzf "${TMP_DIR}/scafctl.tar.gz" -C "$TMP_DIR"
+            cp "${TMP_DIR}/scafctl" "${TOOLS_BIN}/scafctl"
+            chmod +x "${TOOLS_BIN}/scafctl"
+          )
+        fi
+
+        scafctl run action ci -f "$ACTIONS_FILE" \
+          -r "workdir=${WORKDIR}" \
+          -r "tools_bin=${TOOLS_BIN}" \
+          -r "build_pkg=${BUILD_PKG}" \
+          -r "min_coverage=${MIN_COVERAGE}" \
+          -r "race=${ENABLE_RACE}" \
+          -r "run_lint=${RUN_LINT}" \
+          -r "run_gosec=${RUN_GOSEC}"

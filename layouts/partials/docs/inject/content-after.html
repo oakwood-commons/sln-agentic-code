@@ -1,0 +1,69 @@
+{{- if and (in .RelPermalink "/docs/walkthrough/") .IsPage -}}
+  {{- $pages := .CurrentSection.RegularPages.ByWeight -}}
+  {{- $total := len $pages -}}
+  {{- $currentIdx := 0 -}}
+  {{- range $i, $p := $pages -}}
+    {{- if eq $p.RelPermalink $.RelPermalink -}}
+      {{- $currentIdx = $i -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $hasPrev := gt $currentIdx 0 -}}
+  {{- $hasNext := lt (add $currentIdx 1) $total -}}
+
+  {{- if not $hasNext -}}
+  <div class="bp-complete-banner">
+    <div class="bp-eyebrow"><span class="bp-dot" aria-hidden="true"></span><span>WALKTHROUGH COMPLETE // {{ printf "%02d OF %02d" $total $total }}</span></div>
+    <p>You have walked a real Go feature from plain-English planning and small tested slices through local pre-PR review and a bounded GitHub Copilot loop. Explore the <strong>Reference &amp; Lookup</strong> guides in the sidebar whenever you want to set up your own repo or customize models.</p>
+  </div>
+  {{- end -}}
+
+  <nav class="bp-step-nav" aria-label="Walkthrough step navigation">
+    {{- if $hasPrev -}}
+      {{- $prev := index $pages (sub $currentIdx 1) -}}
+      <a class="bp-step-card is-prev" href="{{ $prev.RelPermalink }}">
+        <span class="bp-step-dir">&lt;- PREVIOUS // STEP {{ printf "%02d" $currentIdx }}</span>
+        <span class="bp-step-title">{{ $prev.Title }}</span>
+      </a>
+    {{- else -}}
+      <a class="bp-step-card is-prev" href="{{ .Site.Home.RelPermalink }}">
+        <span class="bp-step-dir">&lt;- START HERE</span>
+        <span class="bp-step-title">The Problem &amp; Big Picture</span>
+      </a>
+    {{- end -}}
+
+    {{- if $hasNext -}}
+      {{- $nextIdx := add $currentIdx 1 -}}
+      {{- $next := index $pages $nextIdx -}}
+      <a class="bp-step-card is-next" href="{{ $next.RelPermalink }}">
+        <span class="bp-step-dir">NEXT // STEP {{ printf "%02d" (add $nextIdx 1) }} -&gt;</span>
+        <span class="bp-step-title">{{ $next.Title }}</span>
+        {{- with $next.Params.goal -}}
+        <span class="bp-step-goal">{{ . }}</span>
+        {{- end -}}
+      </a>
+    {{- else -}}
+      {{- with site.GetPage "/docs/reference/repo-and-github-setup" -}}
+      <a class="bp-step-card is-next" href="{{ .RelPermalink }}">
+        <span class="bp-step-dir">UP NEXT // REFERENCE -&gt;</span>
+        <span class="bp-step-title">{{ .Title }}</span>
+      </a>
+      {{- end -}}
+    {{- end -}}
+  </nav>
+{{- else if .IsHome -}}
+  {{- $wtTotal := 5 -}}
+  {{- with site.GetPage "/docs/walkthrough" -}}
+    {{- $wtTotal = len .RegularPages -}}
+  {{- end -}}
+  {{- with site.GetPage "/docs/walkthrough/01-run-the-starter-app" -}}
+  <nav class="bp-step-nav is-home-cta" aria-label="Begin walkthrough">
+    <a class="bp-step-card is-next" href="{{ .RelPermalink }}">
+      <span class="bp-step-dir">START THE WALKTHROUGH // STEP 01 OF {{ printf "%02d" $wtTotal }} -&gt;</span>
+      <span class="bp-step-title">{{ .Title }}</span>
+      {{- with .Params.goal -}}
+      <span class="bp-step-goal">{{ . }}</span>
+      {{- end -}}
+    </a>
+  </nav>
+  {{- end -}}
+{{- end -}}

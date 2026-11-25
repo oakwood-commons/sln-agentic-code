@@ -1,0 +1,53 @@
+# AGENTS.md
+
+Canonical repository guidance for any contributor or AI coding tool working in
+`{{ .project_name }}`.
+
+This file states **what this repository requires** (build/test/lint commands,
+coverage gates, and Go conventions). It does **not** dictate which AI coding
+harness or personal workflow you use. Pull request review rules live separately
+in [`REVIEW.md`](REVIEW.md).
+
+## Overview
+
+Go module: `{{ .module_name }}`
+
+## Git & Pull Requests
+
+- **Conventional commits**: `feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `test:`
+  (`!` for breaking changes).
+- **Signing & DCO**: sign commits and include a DCO `Signed-off-by:` trailer
+  (`git commit -s -S`).
+- **Squash-merge repository**: every PR becomes one commit on `main` built from
+  the **PR title and body** (`PR_TITLE` / `PR_BODY`). Keep the PR title a valid
+  conventional-commit subject and update the PR body whenever a new commit
+  changes what the PR does.
+- **Copilot review discipline**: Copilot reviews ready-for-review PRs on open
+  (`review_on_push: false`). Wait for CI checks to pass before requesting a
+  re-review, and only re-request Copilot after pushing fixes for open findings.
+
+## Build, Test & Lint
+
+~~~bash
+{{- if .include_go_ci }}
+# Install missing CI tools (golangci-lint, gosec) into .tool/bin
+scafctl run action install-tools -f ./ci/go-ci/actions.yaml
+
+# Run full portable Go CI locally (gofmt, vet, lint, gosec, race tests, coverage, build)
+scafctl run action ci -f ./ci/go-ci/actions.yaml
+
+{{- end }}
+# Run targeted Go tests during iteration
+go test -race ./...
+~~~
+
+## Go Conventions
+
+- Wrap errors with context and `%w` (`fmt.Errorf("...: %w", err)`), preserve
+  `errors.Is` / `errors.As`, and never panic in library packages.
+- Maintain **{{ .min_coverage }}%+ statement coverage** with table-driven tests
+  exercising public interfaces rather than private internals.
+- Close opened files, network bodies, and goroutines cleanly; respect
+  `context.Context` cancellation.
+- Never commit secrets, credentials, or user-specific home paths (such as
+  `/home/<user>/` or `/Users/<user>/`).

@@ -1,0 +1,28 @@
+# Build & static site outputs
+public/
+site/resources/
+dist/
+bin/
+.hugo_build.lock
+
+# Local caches & tool installs
+.gocache/
+.cache/
+.tool/
+.task/
+temp/
+
+# Go coverage & test artifacts
+coverage.*
+*.coverprofile
+*.test
+
+# Backup files created by scafctl --backup
+*.bak
+
+# Session handoff notes (local only)
+HANDOFF.md
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

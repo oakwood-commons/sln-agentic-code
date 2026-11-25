@@ -1,0 +1,521 @@
+# Portable Go CI workflow powered by scafctl.
+#
+# Usage:
+#   scafctl run action install-tools -f ci/go-ci/actions.yaml
+#   scafctl run action ci -f ci/go-ci/actions.yaml -r workdir=examples/go-app
+#   scafctl run action lint test -f ci/go-ci/actions.yaml -r workdir=examples/go-app
+#   scafctl test functional -f ci/go-ci/actions.yaml
+
+apiVersion: scafctl.io/v1
+kind: Solution
+
+metadata:
+  name: go-ci
+  version: 1.0.0
+  displayName: Portable Go CI
+  category: ci
+  tags:
+    - go
+    - ci
+    - lint
+    - security
+  description: |
+    Cross-platform Go CI pipeline and developer tool installer. Runs identically
+    from a local terminal, GitHub Actions, or Tekton.
+
+bundle:
+  plugins:
+    - name: exec
+      kind: provider
+      version: latest
+    - name: metadata
+      kind: provider
+      version: latest
+
+spec:
+  resolvers:
+    platform:
+      description: Runtime OS, CPU architecture, and working directory
+      resolve:
+        with:
+          - provider: metadata
+            inputs: {}
+      validate:
+        with:
+          - provider: validation
+            inputs:
+              expression: '__self.os in ["linux", "darwin", "windows"]'
+            message: "Unsupported operating system for go-ci (expected linux, darwin, or windows)"
+          - provider: validation
+            inputs:
+              expression: '__self.arch in ["amd64", "arm64"]'
+            message: "Unsupported CPU architecture for go-ci (expected amd64 or arm64)"
+
+    workdir:
+      description: Go module directory to validate and build
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: workdir
+          - provider: static
+            inputs:
+              value: "."
+
+    tools_bin:
+      description: Directory where missing CI tools (golangci-lint, gosec) are installed
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: tools_bin
+          - provider: cel
+            inputs:
+              expression: '_.platform.cwd + "/.tool/bin"'
+
+    golangci_lint_version:
+      description: Pinned golangci-lint version (without leading v)
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: golangci_lint_version
+          - provider: static
+            inputs:
+              value: "2.15.0"
+
+    gosec_version:
+      description: Pinned gosec version (without leading v)
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: gosec_version
+          - provider: static
+            inputs:
+              value: "2.30.0"
+
+    race:
+      description: Enable the Go race detector during test runs when supported
+      type: bool
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: race
+          - provider: static
+            inputs:
+              value: true
+
+    run_lint:
+      description: Run golangci-lint static analysis
+      type: bool
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: run_lint
+          - provider: static
+            inputs:
+              value: true
+
+    run_gosec:
+      description: Run gosec static security analysis
+      type: bool
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: run_gosec
+          - provider: static
+            inputs:
+              value: true
+
+    min_coverage:
+      description: Minimum total statement coverage percentage (0 disables the threshold)
+      type: int
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: min_coverage
+          - provider: static
+            inputs:
+              value: 70
+      validate:
+        with:
+          - provider: validation
+            inputs:
+              expression: "__self >= 0 && __self <= 100"
+            message: "min_coverage must be between 0 and 100"
+
+    build_pkg:
+      description: Package pattern passed to go build
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: build_pkg
+          - provider: static
+            inputs:
+              value: "./..."
+
+    output_bin:
+      description: Optional output binary path for go build -o (empty builds without writing a binary)
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: output_bin
+          - provider: static
+            inputs:
+              value: ""
+
+  workflow:
+    actions:
+      install-tools:
+        displayName: Install Go CI Tools
+        description: Install golangci-lint and gosec for the detected OS and architecture if missing
+        provider: exec
+        timeout: 10m
+        inputs:
+          passthrough: true
+          env:
+            TARGET_OS:
+              expr: "_.platform.os"
+            TARGET_ARCH:
+              expr: "_.platform.arch"
+            TOOLS_BIN:
+              rslvr: tools_bin
+            GOLANGCI_LINT_VERSION:
+              rslvr: golangci_lint_version
+            GOSEC_VERSION:
+              rslvr: gosec_version
+            NEED_LINT:
+              expr: "string(_.run_lint)"
+            NEED_GOSEC:
+              expr: "string(_.run_gosec)"
+          command: |
+            set -e
+            mkdir -p "$TOOLS_BIN"
+            PATH_SEP=":"
+            EXE_EXT=""
+            if [ "$TARGET_OS" = "windows" ]; then
+              PATH_SEP=";"
+              EXE_EXT=".exe"
+            fi
+            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+
+            if [ "$NEED_LINT" = "true" ]; then
+              LINT_VER_OUT=""
+              if command -v golangci-lint >/dev/null 2>&1; then
+                LINT_VER_OUT="$(golangci-lint --version 2>/dev/null || true)"
+              fi
+              case "$LINT_VER_OUT" in
+                *"$GOLANGCI_LINT_VERSION"*)
+                  echo "golangci-lint v${GOLANGCI_LINT_VERSION} already available: $(command -v golangci-lint)"
+                  ;;
+                *)
+                  echo "Installing golangci-lint v${GOLANGCI_LINT_VERSION} for ${TARGET_OS}/${TARGET_ARCH}..."
+                  (
+                    TMP_DIR="$(mktemp -d)"
+                    trap 'rm -rf "$TMP_DIR"' EXIT
+                    if [ "$TARGET_OS" = "windows" ]; then
+                      ARCHIVE="golangci-lint-${GOLANGCI_LINT_VERSION}-${TARGET_OS}-${TARGET_ARCH}.zip"
+                      URL="https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/${ARCHIVE}"
+                      curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                      if command -v tar.exe >/dev/null 2>&1; then
+                        tar.exe -xf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                      else
+                        unzip -q "${TMP_DIR}/${ARCHIVE}" -d "$TMP_DIR"
+                      fi
+                    else
+                      ARCHIVE="golangci-lint-${GOLANGCI_LINT_VERSION}-${TARGET_OS}-${TARGET_ARCH}.tar.gz"
+                      URL="https://github.com/golangci/golangci-lint/releases/download/v${GOLANGCI_LINT_VERSION}/${ARCHIVE}"
+                      curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                      tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                    fi
+                    cp "${TMP_DIR}/golangci-lint-${GOLANGCI_LINT_VERSION}-${TARGET_OS}-${TARGET_ARCH}/golangci-lint${EXE_EXT}" "${TOOLS_BIN}/golangci-lint${EXE_EXT}"
+                    chmod +x "${TOOLS_BIN}/golangci-lint${EXE_EXT}"
+                  )
+                  ;;
+              esac
+            fi
+
+            if [ "$NEED_GOSEC" = "true" ]; then
+              GOSEC_VER_OUT=""
+              if command -v gosec >/dev/null 2>&1; then
+                GOSEC_VER_OUT="$(gosec --version 2>&1 || true)"
+              fi
+              case "$GOSEC_VER_OUT" in
+                *"$GOSEC_VERSION"*)
+                  echo "gosec v${GOSEC_VERSION} already available: $(command -v gosec)"
+                  ;;
+                *)
+                  echo "Installing gosec v${GOSEC_VERSION} for ${TARGET_OS}/${TARGET_ARCH}..."
+                  (
+                    TMP_DIR="$(mktemp -d)"
+                    trap 'rm -rf "$TMP_DIR"' EXIT
+                    ARCHIVE="gosec_${GOSEC_VERSION}_${TARGET_OS}_${TARGET_ARCH}.tar.gz"
+                    URL="https://github.com/securego/gosec/releases/download/v${GOSEC_VERSION}/${ARCHIVE}"
+                    curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                    tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                    cp "${TMP_DIR}/gosec${EXE_EXT}" "${TOOLS_BIN}/gosec${EXE_EXT}"
+                    chmod +x "${TOOLS_BIN}/gosec${EXE_EXT}"
+                  )
+                  ;;
+              esac
+            fi
+
+      fmt-check:
+        displayName: Format Check (gofmt)
+        description: Verify all Go source files are formatted with gofmt
+        provider: exec
+        timeout: 2m
+        inputs:
+          workingDir:
+            rslvr: workdir
+          passthrough: true
+          env:
+            GOWORK: "off"
+          command: |
+            CR="$(printf '\r')"
+            RAW_UNFORMATTED="$(gofmt -l .)"
+            UNFORMATTED=""
+            if [ -n "$RAW_UNFORMATTED" ]; then
+              while IFS= read -r f; do
+                f="${f%"$CR"}"
+                case "$f" in
+                  ""|.cache/*|.tool/*|vendor/*|.cache\\*|.tool\\*|vendor\\*) ;;
+                  *) UNFORMATTED="${UNFORMATTED}${f}
+            " ;;
+                esac
+              done <<EOF
+            $RAW_UNFORMATTED
+            EOF
+            fi
+            if [ -n "$UNFORMATTED" ]; then
+              echo "The following Go files need gofmt:"
+              printf "%s" "$UNFORMATTED"
+              exit 1
+            fi
+            echo "gofmt check passed."
+
+      vet:
+        displayName: Go Vet
+        description: Run go vet across all packages in the module
+        provider: exec
+        timeout: 5m
+        inputs:
+          workingDir:
+            rslvr: workdir
+          passthrough: true
+          env:
+            GOWORK: "off"
+          command: "go vet ./..."
+
+      lint:
+        displayName: GolangCI-Lint
+        description: Run golangci-lint static checks
+        provider: exec
+        dependsOn:
+          - install-tools
+        when:
+          expr: "_.run_lint"
+        timeout: 10m
+        inputs:
+          workingDir:
+            rslvr: workdir
+          passthrough: true
+          env:
+            GOWORK: "off"
+            TARGET_OS:
+              expr: "_.platform.os"
+            TOOLS_BIN:
+              rslvr: tools_bin
+          command: |
+            PATH_SEP=":"
+            if [ "$TARGET_OS" = "windows" ]; then
+              PATH_SEP=";"
+            fi
+            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+            golangci-lint run ./...
+
+      gosec:
+        displayName: Security Scan (gosec)
+        description: Run gosec static security scanner over module packages
+        provider: exec
+        dependsOn:
+          - install-tools
+        when:
+          expr: "_.run_gosec"
+        timeout: 10m
+        inputs:
+          workingDir:
+            rslvr: workdir
+          passthrough: true
+          env:
+            GOWORK: "off"
+            TARGET_OS:
+              expr: "_.platform.os"
+            TOOLS_BIN:
+              rslvr: tools_bin
+          command: |
+            PATH_SEP=":"
+            if [ "$TARGET_OS" = "windows" ]; then
+              PATH_SEP=";"
+            fi
+            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+            gosec -quiet ./...
+
+      test:
+        displayName: Go Tests & Coverage
+        description: Run unit tests (with -race when available) and enforce minimum statement coverage
+        provider: exec
+        timeout: 10m
+        inputs:
+          workingDir:
+            rslvr: workdir
+          passthrough: true
+          env:
+            GOWORK: "off"
+            TARGET_OS:
+              expr: "_.platform.os"
+            TARGET_ARCH:
+              expr: "_.platform.arch"
+            ENABLE_RACE:
+              expr: "string(_.race)"
+            MIN_COVERAGE:
+              expr: "string(_.min_coverage)"
+          command: |
+            set -e
+            RACE_ARG=""
+            if [ "$ENABLE_RACE" = "true" ]; then
+              if [ "$TARGET_OS" = "windows" ] && [ "$TARGET_ARCH" = "arm64" ]; then
+                echo "Go race detector is unsupported on windows/arm64; running go test without -race"
+              else
+                CC_BIN="$(go env CC 2>/dev/null || true)"
+                if [ -n "$CC_BIN" ] && command -v "$CC_BIN" >/dev/null 2>&1; then
+                  RACE_ARG="-race"
+                else
+                  echo "C compiler not found; running go test without -race"
+                fi
+              fi
+            fi
+
+            TMP_COVER="$(mktemp)"
+            trap 'rm -f "$TMP_COVER"' EXIT
+
+            if [ -n "$RACE_ARG" ]; then
+              CGO_ENABLED=1 go test -race -coverprofile="$TMP_COVER" ./...
+            else
+              go test -coverprofile="$TMP_COVER" ./...
+            fi
+
+            CR="$(printf '\r')"
+            COV_OUT="$(go tool cover -func="$TMP_COVER")"
+            LAST_LINE="${COV_OUT##*
+            }"
+            LAST_LINE="${LAST_LINE%"$CR"}"
+            TOTAL_COV="${LAST_LINE##*	}"
+            TOTAL_COV="${TOTAL_COV##* }"
+            TOTAL_COV="${TOTAL_COV%%%}"
+            echo "Total statement coverage: ${TOTAL_COV}% (minimum: ${MIN_COVERAGE}%)"
+            if [ "$MIN_COVERAGE" -gt 0 ]; then
+              COV_INT="${TOTAL_COV%%.*}"
+              if [ "$COV_INT" -lt "$MIN_COVERAGE" ]; then
+                echo "Coverage ${TOTAL_COV}% is below required ${MIN_COVERAGE}%" >&2
+                exit 1
+              fi
+            fi
+
+      build:
+        displayName: Go Build
+        description: Compile target Go packages after all checks pass
+        provider: exec
+        dependsOn:
+          - fmt-check
+          - vet
+          - lint
+          - gosec
+          - test
+        timeout: 5m
+        inputs:
+          workingDir:
+            rslvr: workdir
+          passthrough: true
+          env:
+            GOWORK: "off"
+            CGO_ENABLED: "0"
+            BUILD_PKG:
+              rslvr: build_pkg
+            OUTPUT_BIN:
+              rslvr: output_bin
+          command: |
+            if [ -n "$OUTPUT_BIN" ]; then
+              case "$OUTPUT_BIN" in
+                */*|*\\*) mkdir -p "${OUTPUT_BIN%[/\\]*}" ;;
+              esac
+              go build -trimpath -o "$OUTPUT_BIN" "$BUILD_PKG"
+              echo "Built binary: $OUTPUT_BIN"
+            else
+              go build -trimpath "$BUILD_PKG"
+              echo "Verified build for: $BUILD_PKG"
+            fi
+
+      ci:
+        displayName: Go CI Complete
+        description: Top-level target running all Go CI stages and build verification
+        provider: static
+        dependsOn:
+          - build
+        inputs:
+          value:
+            status: passed
+            workdir:
+              rslvr: workdir
+            build_pkg:
+              rslvr: build_pkg
+
+  testing:
+    cases:
+      resolve-defaults:
+        description: Verify default Go CI parameters resolve cleanly
+        command: [run, resolver]
+        args: [-o, json]
+        exitCode: 0
+        assertions:
+          - expression: '__output.workdir == "."'
+            message: Default workdir should be current directory
+          - expression: "__output.race == true"
+            message: Race detection should default to true
+          - expression: "__output.min_coverage == 70"
+            message: Default minimum coverage should be 70
+
+      override-parameters:
+        description: Verify CLI parameter overrides coerce types accurately
+        command: [run, resolver]
+        args: [-r, workdir=examples/go-app, -r, race=false, -r, min_coverage=80, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: '__output.workdir == "examples/go-app"'
+            message: workdir override should take effect
+          - expression: "__output.race == false"
+            message: race boolean should coerce to false
+          - expression: "__output.min_coverage == 80"
+            message: min_coverage should coerce to 80
+
+      reject-invalid-coverage:
+        description: Reject out-of-range coverage percentages
+        command: [run, resolver]
+        args: [-r, min_coverage=150, --on-validation-error, error, -o, json]
+        exitCode: 2
+        assertions:
+          - expression: '__output.__status == "failed"'
+            message: Out-of-range min_coverage should report failed validation status

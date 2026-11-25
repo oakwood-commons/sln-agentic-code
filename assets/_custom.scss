@@ -1,0 +1,903 @@
+// Blueprint Theme for oakwood-commons/sln-agentic-code
+// Matches the scafctl Blueprint design system (pkg/authpage/template.go).
+
+$bp-canvas: #05152a;
+$bp-navy: #071e3d;
+$bp-navy-deep: #061b30;
+$bp-code-bg: #041020;
+$bp-cyan: #00e9f2;
+$bp-mint: #a4f6c5;
+$bp-amber: #ffc28e;
+$bp-coral: #ff8585;
+$bp-text: #eff7ff;
+$bp-text-secondary: #cbdae8;
+$bp-muted: #9bafc4;
+$bp-caption: #7894af;
+$bp-steel: #4e8298;
+$bp-border: rgba(67, 102, 123, 0.38);
+$bp-divider: rgba(82, 117, 142, 0.28);
+
+@mixin theme-blueprint {
+  color-scheme: dark;
+
+  --body-background: #{$bp-canvas};
+  --body-background-tint: none;
+  --body-font-color: #{$bp-text};
+
+  --color-link: #{$bp-cyan};
+  --color-visited-link: #5fe3ec;
+
+  --icon-filter: brightness(0) invert(0.84) sepia(0.22) saturate(2.2) hue-rotate(168deg);
+
+  --gray-100: #{$bp-navy};
+  --gray-200: #{$bp-border};
+  --gray-500: #{$bp-muted};
+
+  @include accent("default", $bp-steel);
+  @include accent("note", $bp-cyan);
+  @include accent("tip", $bp-mint);
+  @include accent("important", #7dd3fc);
+  @include accent("warning", $bp-amber);
+  @include accent("caution", $bp-coral);
+
+  @include accent("info", $bp-cyan);
+  @include accent("success", $bp-mint);
+  @include accent("danger", $bp-coral);
+}
+
+// Blueprint ambient glow + 24px / 120px architectural grid
+body {
+  position: relative;
+  background-color: $bp-canvas;
+  background-image:
+    radial-gradient(ellipse at 68% 18%, rgba(11, 56, 80, 0.34), transparent 65%),
+    linear-gradient(rgba(99, 162, 187, 0.038) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 162, 187, 0.038) 1px, transparent 1px),
+    linear-gradient(rgba(99, 162, 187, 0.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 162, 187, 0.055) 1px, transparent 1px);
+  background-size: 100% 100%, 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  background-attachment: fixed;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+// Sidebar navigation & brand header
+.book-menu .book-menu-content {
+  background: linear-gradient(180deg, rgba(7, 30, 61, 0.94), rgba(5, 21, 42, 0.96));
+  border-inline-end: 1px solid $bp-border;
+  backdrop-filter: blur(8px);
+}
+
+.book-brand {
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid $bp-divider;
+
+  a {
+    gap: 0.65rem;
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    color: #ffffff !important;
+  }
+
+  img {
+    width: 1.85rem;
+    height: 1.85rem;
+    filter: none !important;
+  }
+}
+
+.book-search input {
+  background: rgba(4, 16, 32, 0.85);
+  border: 1px solid $bp-border;
+  color: $bp-text;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+
+  &::placeholder {
+    color: $bp-caption;
+  }
+
+  &:focus {
+    border-color: $bp-cyan;
+    box-shadow: 0 0 0 2px rgba(0, 233, 242, 0.15);
+    outline: none;
+  }
+}
+
+.book-menu nav {
+  a {
+    color: $bp-text-secondary;
+    border-radius: 5px;
+    padding: 0.42rem 0.6rem;
+    margin: 0.1rem 0;
+    transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+
+    &:hover {
+      opacity: 1;
+      color: #ffffff;
+      background: rgba(0, 233, 242, 0.07);
+    }
+
+    &.active {
+      color: $bp-cyan;
+      font-weight: 600;
+      background: rgba(0, 233, 242, 0.1);
+      box-shadow: inset 2px 0 0 $bp-cyan;
+    }
+  }
+}
+
+// Main content Blueprint sheet & right ToC
+.book-page {
+  background: linear-gradient(115deg, rgba(7, 30, 61, 0.78), rgba(6, 27, 48, 0.78));
+  border: 1px solid $bp-border;
+  border-radius: 8px;
+  padding: 2rem 2.5rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+  box-shadow: 0 18px 48px rgba(2, 9, 20, 0.45);
+}
+
+@media (max-width: 56rem) {
+  .book-page {
+    padding: 1.25rem 1.15rem;
+    margin-top: 0.25rem;
+    border-radius: 0;
+    border-inline: none;
+  }
+}
+
+.book-toc .book-toc-content {
+  font-size: 0.82rem;
+
+  nav a {
+    color: $bp-muted;
+    padding: 0.28rem 0;
+
+    &:hover {
+      opacity: 1;
+      color: $bp-cyan;
+    }
+  }
+}
+
+.book-footer {
+  border-top: 1px solid $bp-divider;
+  padding-top: 1rem;
+  color: $bp-caption;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.78rem;
+}
+
+// Markdown typography, tables, alerts, code, and Mermaid diagrams
+.markdown {
+  color: $bp-text-secondary;
+  line-height: 1.7;
+
+  h1, h2, h3, h4 {
+    color: #ffffff;
+    letter-spacing: -0.025em;
+  }
+
+  h1 {
+    font-weight: 650;
+    letter-spacing: -0.035em;
+  }
+
+  h2 {
+    font-weight: 600;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid $bp-divider;
+  }
+
+  strong {
+    color: $bp-text;
+  }
+
+  // Inline code
+  :not(pre) > code {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.875em;
+    background: rgba(0, 233, 242, 0.08);
+    border: 1px solid rgba(0, 233, 242, 0.2);
+    color: #d7faff;
+    padding: 0.12em 0.4em;
+    border-radius: 4px;
+  }
+
+  // Tables
+  table {
+    width: 100%;
+    border-radius: 6px;
+
+    tr th {
+      background: rgba(4, 16, 32, 0.75);
+      color: $bp-mint;
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      border-color: $bp-border;
+    }
+
+    tr td {
+      border-color: $bp-border;
+    }
+
+    tr:nth-child(2n) {
+      background: rgba(7, 30, 61, 0.55);
+    }
+  }
+
+  // Mermaid CAD container
+  pre.mermaid {
+    background: linear-gradient(115deg, rgba(4, 16, 32, 0.82), rgba(7, 30, 61, 0.72));
+    border: 1px solid $bp-border;
+    border-radius: 6px;
+    padding: 1.25rem;
+    text-align: center;
+    overflow-x: auto;
+  }
+
+  // Tabs
+  .book-tabs {
+    background: rgba(4, 16, 32, 0.45);
+    border-color: $bp-border;
+    border-radius: 6px;
+
+    label {
+      font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+      font-size: 0.82rem;
+      color: $bp-muted;
+    }
+
+    input[type="radio"]:checked + label {
+      color: $bp-cyan;
+      border-bottom: 2px solid $bp-cyan;
+      background: rgba(0, 233, 242, 0.06);
+    }
+  }
+
+  // Blockquotes & GitHub Alerts
+  blockquote.book-hint {
+    border-radius: 6px;
+    border-inline-start-width: 3px;
+    padding: 0.85rem 1.15rem;
+  }
+}
+
+// Highlighted code blocks & copy-to-clipboard button
+.highlight {
+  position: relative;
+  margin: 1rem 0;
+
+  pre {
+    position: relative;
+    background: $bp-code-bg !important;
+    border: 1px solid $bp-border;
+    border-radius: 6px;
+    padding: 1.65rem 1rem 1rem !important;
+    overflow-x: auto;
+  }
+
+  pre code[data-lang]::before {
+    content: attr(data-lang);
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 2px 9px;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.65em;
+    line-height: 1.6;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: $bp-cyan;
+    background: rgba(0, 233, 242, 0.09);
+    border-bottom: 1px solid rgba(0, 233, 242, 0.18);
+    border-right: 1px solid rgba(0, 233, 242, 0.18);
+    border-bottom-right-radius: 5px;
+    pointer-events: none;
+    user-select: none;
+  }
+}
+
+.copy-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid $bp-border;
+  border-radius: 5px;
+  background: rgba(7, 30, 61, 0.85);
+  color: $bp-muted;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  z-index: 2;
+
+  &:hover {
+    background: rgba(0, 233, 242, 0.14);
+    border-color: $bp-cyan;
+    color: #ffffff;
+  }
+
+  &.copied {
+    color: $bp-mint;
+    border-color: $bp-mint;
+    opacity: 1;
+  }
+}
+
+.highlight:hover .copy-button {
+  opacity: 1;
+}
+
+@media (hover: none) {
+  .copy-button {
+    opacity: 0.75;
+  }
+}
+
+// Home page Blueprint Hero Sheet & Icon Cards (matches pkg/authpage/template.go)
+.bp-hero {
+  position: relative;
+  background: linear-gradient(115deg, rgba(7, 30, 61, 0.96), rgba(6, 27, 48, 0.96));
+  border: 1px solid rgba(67, 102, 123, 0.5);
+  border-radius: 8px;
+  padding: 2.1rem 2.4rem 1.35rem;
+  margin-bottom: 2rem;
+  overflow: hidden;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(rgba(99, 162, 187, 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 162, 187, 0.05) 1px, transparent 1px),
+      linear-gradient(rgba(99, 162, 187, 0.075) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(99, 162, 187, 0.075) 1px, transparent 1px);
+    background-size: 24px 24px, 24px 24px, 120px 120px, 120px 120px;
+  }
+}
+
+.bp-hero-header,
+.bp-hero-body,
+.bp-hero-footer {
+  position: relative;
+}
+
+.bp-hero-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid $bp-divider;
+
+  img.bp-lockup {
+    height: 44px;
+    width: auto;
+    display: block;
+    margin-left: -4px;
+  }
+}
+
+.bp-edition {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: $bp-caption;
+}
+
+.bp-hero-body {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  align-items: center;
+  gap: 1.75rem;
+  padding: 1.8rem 0 1.6rem;
+}
+
+.bp-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: $bp-mint;
+}
+
+.bp-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: $bp-mint;
+  box-shadow: 0 0 8px rgba(164, 246, 197, 0.65);
+}
+
+.bp-hero-title {
+  font-size: clamp(2rem, 3.6vw, 2.85rem) !important;
+  line-height: 1.08 !important;
+  letter-spacing: -0.04em !important;
+  font-weight: 600 !important;
+  margin: 0.9rem 0 1rem !important;
+  color: #ffffff !important;
+}
+
+.bp-hero-desc {
+  color: $bp-text-secondary;
+  font-size: 1rem;
+  line-height: 1.65;
+  margin: 0 0 1.35rem;
+}
+
+.bp-cta-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.bp-btn-primary,
+.bp-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+  padding: 0.58rem 1.05rem;
+  border-radius: 5px;
+  transition: transform 0.12s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.bp-btn-primary {
+  background: rgba(0, 233, 242, 0.14);
+  border: 1px solid $bp-cyan;
+  color: #ffffff !important;
+
+  &:hover {
+    background: rgba(0, 233, 242, 0.24);
+    transform: translateY(-1px);
+  }
+}
+
+.bp-btn-secondary {
+  background: rgba(4, 16, 32, 0.6);
+  border: 1px solid $bp-border;
+  color: $bp-text-secondary !important;
+
+  &:hover {
+    border-color: $bp-mint;
+    color: $bp-mint !important;
+  }
+}
+
+.bp-diagram {
+  width: 100%;
+  max-width: 340px;
+  justify-self: end;
+  overflow: visible;
+
+  .construction {
+    fill: none;
+    stroke: $bp-steel;
+    stroke-width: 0.65;
+    opacity: 0.45;
+  }
+
+  .flow {
+    fill: none;
+    stroke: $bp-cyan;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 600;
+    stroke-dashoffset: 0;
+    animation: bp-draw 1.3s ease-out both;
+  }
+
+  text {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    fill: #8aa7be;
+    font-size: 8px;
+    letter-spacing: 1.5px;
+  }
+
+  .status {
+    fill: $bp-mint;
+  }
+
+  .status-mark {
+    fill: none;
+    stroke: #062339;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+}
+
+.bp-hero-footer {
+  border-top: 1px solid $bp-divider;
+  padding-top: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: #809ab3;
+
+  .bp-state {
+    color: $bp-mint;
+  }
+}
+
+// Blueprint pillar cards with inline stroke icons
+.bp-pillars {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+@media (max-width: 640px) {
+  .bp-pillars {
+    grid-template-columns: 1fr;
+  }
+}
+
+// Guided Walkthrough Top Stepper Bar
+.bp-walkthrough-bar {
+  background: rgba(4, 16, 32, 0.72);
+  border: 1px solid $bp-border;
+  border-radius: 7px;
+  padding: 0.9rem 1.15rem;
+  margin-bottom: 1.65rem;
+}
+
+.bp-wt-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.7rem;
+}
+
+.bp-wt-badge,
+.bp-wt-duration {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.68rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.bp-wt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: $bp-mint;
+}
+
+.bp-wt-duration {
+  color: $bp-caption;
+}
+
+.bp-wt-track {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.bp-wt-node {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0;
+  border-radius: 4px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  border: 1px solid $bp-border;
+  background: rgba(7, 30, 61, 0.55);
+  color: $bp-caption !important;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+
+  &.is-done {
+    border-color: rgba(164, 246, 197, 0.45);
+    background: rgba(164, 246, 197, 0.1);
+    color: $bp-mint !important;
+  }
+
+  &.is-current {
+    border-color: $bp-cyan;
+    background: rgba(0, 233, 242, 0.18);
+    color: #ffffff !important;
+    font-weight: 700;
+    box-shadow: 0 0 12px rgba(0, 233, 242, 0.2);
+  }
+
+  &:hover {
+    border-color: $bp-cyan;
+    color: #ffffff !important;
+  }
+}
+
+.bp-wt-goal {
+  margin-top: 0.7rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid $bp-divider;
+  font-size: 0.85rem;
+  color: $bp-text-secondary;
+
+  .bp-wt-goal-label {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: $bp-cyan;
+    margin-right: 0.35rem;
+  }
+}
+
+// Blueprint Numbered Walkthrough Rails ({{% steps %}})
+.markdown .book-steps > ol {
+  margin-top: 1.5rem;
+
+  > li::before {
+    background: $bp-navy;
+    color: $bp-cyan;
+    border: 1px solid $bp-cyan;
+    outline: 4px solid $bp-navy-deep;
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    align-items: center;
+  }
+
+  > li {
+    border-inline-start-color: rgba(0, 233, 242, 0.32);
+    padding-bottom: 1.65rem;
+  }
+}
+
+// Home Page 5-Step Interactive Roadmap
+.bp-roadmap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 1.25rem 0 2rem;
+}
+
+.bp-roadmap-item {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1.15rem;
+  background: rgba(4, 16, 32, 0.58);
+  border: 1px solid $bp-border;
+  border-radius: 6px;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+
+  &:hover {
+    border-color: $bp-cyan;
+    background: rgba(7, 30, 61, 0.85);
+    transform: translateX(3px);
+  }
+
+  .bp-rm-num {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: $bp-cyan;
+    background: rgba(0, 233, 242, 0.1);
+    border: 1px solid rgba(0, 233, 242, 0.32);
+    border-radius: 5px;
+    padding: 0.32rem 0.55rem;
+  }
+
+  .bp-rm-title {
+    display: block;
+    font-weight: 600;
+    color: #ffffff;
+    font-size: 0.96rem;
+  }
+
+  .bp-rm-desc {
+    display: block;
+    color: $bp-muted;
+    font-size: 0.84rem;
+    margin-top: 0.15rem;
+  }
+
+  .bp-rm-time {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    color: $bp-caption;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 640px) {
+  .bp-roadmap-item {
+    grid-template-columns: auto 1fr;
+
+    .bp-rm-time {
+      display: none;
+    }
+  }
+}
+
+// Bottom Previous / Next Step Walkthrough Transition Cards
+.bp-complete-banner {
+  margin-top: 2.25rem;
+  padding: 1.15rem 1.35rem;
+  background: linear-gradient(115deg, rgba(7, 30, 61, 0.92), rgba(4, 16, 32, 0.92));
+  border: 1px solid rgba(164, 246, 197, 0.45);
+  border-radius: 7px;
+
+  p {
+    margin: 0.55rem 0 0;
+    color: $bp-text-secondary;
+    font-size: 0.92rem;
+  }
+}
+
+.bp-step-nav {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 2.25rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid $bp-divider;
+
+  &.is-home-cta {
+    grid-template-columns: 1fr;
+  }
+}
+
+.bp-step-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 1rem 1.2rem;
+  background: rgba(4, 16, 32, 0.65);
+  border: 1px solid $bp-border;
+  border-radius: 7px;
+  transition: border-color 0.15s ease, background 0.15s ease, transform 0.12s ease;
+
+  &.is-next {
+    border-color: rgba(0, 233, 242, 0.48);
+    background: linear-gradient(115deg, rgba(7, 30, 61, 0.88), rgba(0, 233, 242, 0.07));
+    text-align: right;
+    align-items: flex-end;
+  }
+
+  &:hover {
+    border-color: $bp-cyan;
+    background: rgba(7, 30, 61, 0.95);
+    transform: translateY(-1px);
+  }
+
+  .bp-step-dir {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.14em;
+    color: $bp-mint;
+  }
+
+  &.is-prev .bp-step-dir {
+    color: $bp-caption;
+  }
+
+  .bp-step-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .bp-step-goal {
+    font-size: 0.82rem;
+    color: $bp-muted;
+    line-height: 1.45;
+  }
+}
+
+@media (max-width: 640px) {
+  .bp-step-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .bp-step-card.is-next {
+    text-align: left;
+    align-items: flex-start;
+  }
+}
+
+.bp-card {
+  background: rgba(4, 16, 32, 0.62);
+  border: 1px solid $bp-border;
+  border-radius: 7px;
+  padding: 1.15rem 1.25rem;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    border-color: rgba(0, 233, 242, 0.55);
+    background: rgba(7, 30, 61, 0.75);
+  }
+
+  .bp-card-head {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.5rem;
+  }
+
+  svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+    stroke: $bp-cyan;
+  }
+
+  h3 {
+    margin: 0 !important;
+    font-size: 0.98rem !important;
+    font-weight: 600 !important;
+    color: #ffffff !important;
+  }
+
+  p {
+    margin: 0;
+    font-size: 0.88rem;
+    line-height: 1.55;
+    color: $bp-muted;
+  }
+}
+
+@keyframes bp-draw {
+  from {
+    stroke-dashoffset: 600;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bp-diagram .flow {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 760px) {
+  .bp-hero {
+    padding: 1.4rem 1.25rem 1rem;
+  }
+
+  .bp-edition {
+    display: none;
+  }
+
+  .bp-hero-body {
+    grid-template-columns: 1fr;
+    padding: 1.25rem 0;
+  }
+
+  .bp-diagram {
+    max-width: 250px;
+    justify-self: center;
+  }
+}

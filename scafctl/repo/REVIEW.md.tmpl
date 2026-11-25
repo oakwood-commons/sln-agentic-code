@@ -1,0 +1,64 @@
+# Copilot code review: how to review this repo
+
+You are reviewing as an **independent final reviewer**, not a re-run of this
+repository's authoring process. Find substantive bugs, broken contracts,
+security issues, and missing edge-case tests that local checks missed -- do not
+nitpick style.
+
+## Sources of truth
+
+Read the repository's canonical guidance directly rather than inventing parallel
+rules:
+
+- [`AGENTS.md`](AGENTS.md) -- build/test/lint commands, coverage requirements,
+  Go error/concurrency conventions, and publish hygiene.
+
+Where this file and `AGENTS.md` conflict on a repository convention,
+`AGENTS.md` wins; this file governs *how* to conduct the review.
+
+## Method: review the whole change before writing any findings
+
+1. **Read the full diff and PR description together** before judging individual
+   hunks.
+2. **Inventory every changed interface**: exported functions, types, CLI flags,
+   config keys, HTTP/RPC endpoints, and schemas. Check callers and existing
+   tests across the repository, not only the lines touched by the diff.
+3. **Check test coverage against the actual change**: confirm tests exercise
+   real runtime behavior, boundary inputs, and failure paths (`{{ .min_coverage }}%+`
+   coverage, `go test -race ./...`).
+
+## What to weigh heavily
+
+- **Regressions and edge cases**: `nil`/empty/zero inputs, boundary limits, and
+  failure paths of external calls (filesystem, subprocess, network).
+- **Caller compatibility**: broken assumptions for existing callers outside the
+  diff.
+- **Concurrency and resource cleanup**: data races, lock ordering, unclosed
+  files/transports, goroutine leaks, and missing context cancellation.
+- **Trust boundaries and security**: untrusted input reaching shell execution,
+  file paths, SQL/queries, or logs containing secrets.
+- **PR title and body accuracy**: this repo squash-merges with `PR_TITLE` and
+  `PR_BODY`. Flag a non-conventional title or stale PR body.
+
+## What not to spend the review on
+
+- Style nits already enforced by `gofmt` or `golangci-lint`.
+- Speculative `"Consider ..."` refactors with no behavioral or clarity bug.
+- Defensive checks on internal helpers with no external input path.
+
+## Follow the implication
+
+When one finding reveals a class of defect, search the rest of the diff for
+sibling occurrences and report the class once covering every location rather
+than raising one comment per round.
+
+## Re-reviews (after a fix is pushed)
+
+Stick strictly to `<last_reviewed_commit>..HEAD`:
+
+1. **Verify prior findings and their fixes**, checking whether the fix missed
+   adjacent paths or introduced a regression.
+2. **Inspect only files modified since `<last_reviewed_commit>`** plus callers
+   of interfaces changed in that delta. Do not re-audit untouched files that
+   already passed an earlier round.
+3. **Confirm PR title and body sync** with `HEAD`.

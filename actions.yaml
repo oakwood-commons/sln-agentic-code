@@ -1,0 +1,353 @@
+# Auto-discovered repository actions for oakwood-commons/sln-agentic-code.
+#
+# Common commands:
+#   scafctl run action install-tools
+#   scafctl run action ci
+#   scafctl run action go-ci
+#   scafctl run action docs-build
+#   scafctl run action docs-serve
+#   scafctl run action configure-github -r owner=oakwood-commons -r repo=sln-agentic-code
+
+apiVersion: scafctl.io/v1
+kind: Solution
+
+metadata:
+  name: sln-agentic-code-repo
+  version: 0.1.0
+  displayName: sln-agentic-code Repository Actions
+  category: workflow
+  tags:
+    - agentic-coding
+    - hugo
+    - go
+    - ci
+  description: |
+    Cross-platform tool installer, Hugo documentation builder, Go CI runner,
+    solution bundle verifier, and GitHub repository configurator for
+    oakwood-commons/sln-agentic-code.
+
+bundle:
+  plugins:
+    - name: exec
+      kind: provider
+      version: latest
+    - name: metadata
+      kind: provider
+      version: latest
+
+spec:
+  resolvers:
+    platform:
+      description: Runtime OS, CPU architecture, and repository root directory
+      resolve:
+        with:
+          - provider: metadata
+            inputs: {}
+      validate:
+        with:
+          - provider: validation
+            inputs:
+              expression: '__self.os in ["linux", "darwin", "windows"]'
+            message: "Unsupported operating system (expected linux, darwin, or windows)"
+          - provider: validation
+            inputs:
+              expression: '__self.arch in ["amd64", "arm64"]'
+            message: "Unsupported CPU architecture (expected amd64 or arm64)"
+
+    tools_bin:
+      description: Directory where missing developer tools (hugo, golangci-lint, gosec) are installed
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: tools_bin
+          - provider: cel
+            inputs:
+              expression: '_.platform.cwd + "/.tool/bin"'
+
+    hugo_version:
+      description: Pinned Hugo extended version (matching .github/workflows/pages.yml)
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: hugo_version
+          - provider: static
+            inputs:
+              value: "0.155.2"
+
+    owner:
+      description: GitHub repository owner for configure-github
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: owner
+          - provider: static
+            inputs:
+              value: "oakwood-commons"
+
+    repo:
+      description: GitHub repository name for configure-github
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: repo
+          - provider: static
+            inputs:
+              value: "sln-agentic-code"
+
+    required_approvals:
+      description: Required PR approvals on main for configure-github (1 for org teams, 0 for solo)
+      type: int
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: required_approvals
+          - provider: static
+            inputs:
+              value: 1
+
+  workflow:
+    actions:
+      install-tools:
+        displayName: Install Repo & CI Tools
+        description: Install Hugo extended, golangci-lint, and gosec across Linux, macOS, and Windows
+        provider: exec
+        timeout: 10m
+        inputs:
+          passthrough: true
+          env:
+            TARGET_OS:
+              expr: "_.platform.os"
+            TARGET_ARCH:
+              expr: "_.platform.arch"
+            TOOLS_BIN:
+              rslvr: tools_bin
+            HUGO_VERSION:
+              rslvr: hugo_version
+          command: |
+            set -e
+            mkdir -p "$TOOLS_BIN"
+            PATH_SEP=":"
+            if [ "$TARGET_OS" = "windows" ]; then
+              PATH_SEP=";"
+            fi
+            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+
+            HUGO_VER_OUT=""
+            if command -v hugo >/dev/null 2>&1; then
+              HUGO_VER_OUT="$(hugo version 2>/dev/null || true)"
+            fi
+            case "$HUGO_VER_OUT" in
+              *"${HUGO_VERSION}"*extended*|*"${HUGO_VERSION}"*Extended*)
+                echo "hugo extended v${HUGO_VERSION} already available: ${HUGO_VER_OUT}"
+                ;;
+              *)
+                echo "Installing hugo extended v${HUGO_VERSION} for ${TARGET_OS}/${TARGET_ARCH}..."
+                (
+                  TMP_DIR="$(mktemp -d)"
+                  trap 'rm -rf "$TMP_DIR"' EXIT
+                  if [ "$TARGET_OS" = "linux" ]; then
+                    ARCHIVE="hugo_extended_${HUGO_VERSION}_linux-${TARGET_ARCH}.tar.gz"
+                    URL="https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/${ARCHIVE}"
+                    curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                    tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                    cp "${TMP_DIR}/hugo" "${TOOLS_BIN}/hugo"
+                    chmod +x "${TOOLS_BIN}/hugo"
+                  elif [ "$TARGET_OS" = "darwin" ]; then
+                    ARCHIVE="hugo_extended_${HUGO_VERSION}_darwin-universal.pkg"
+                    URL="https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/${ARCHIVE}"
+                    curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                    pkgutil --expand-full "${TMP_DIR}/${ARCHIVE}" "${TMP_DIR}/expanded"
+                    HUGO_BIN=""
+                    for candidate in $(find "${TMP_DIR}/expanded" -name hugo -type f); do
+                      HUGO_BIN="$candidate"
+                      break
+                    done
+                    cp "$HUGO_BIN" "${TOOLS_BIN}/hugo"
+                    chmod +x "${TOOLS_BIN}/hugo"
+                  elif [ "$TARGET_OS" = "windows" ]; then
+                    ARCHIVE="hugo_extended_${HUGO_VERSION}_windows-amd64.zip"
+                    URL="https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/${ARCHIVE}"
+                    curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                    if command -v tar.exe >/dev/null 2>&1; then
+                      tar.exe -xf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                    else
+                      unzip -q "${TMP_DIR}/${ARCHIVE}" -d "$TMP_DIR"
+                    fi
+                    cp "${TMP_DIR}/hugo.exe" "${TOOLS_BIN}/hugo.exe"
+                  fi
+                )
+                ;;
+            esac
+
+            scafctl run action install-tools -f ./ci/go-ci/actions.yaml -r "tools_bin=${TOOLS_BIN}"
+
+      go-ci:
+        displayName: Go Sample App CI
+        description: Run the portable Go CI workflow against examples/go-app and check repo readiness
+        provider: exec
+        dependsOn:
+          - install-tools
+        timeout: 10m
+        inputs:
+          passthrough: true
+          env:
+            TARGET_OS:
+              expr: "_.platform.os"
+            TOOLS_BIN:
+              rslvr: tools_bin
+          command: |
+            set -e
+            EXE_EXT=""
+            if [ "$TARGET_OS" = "windows" ]; then
+              EXE_EXT=".exe"
+            fi
+            scafctl run action ci -f ./ci/go-ci/actions.yaml \
+              -r workdir=examples/go-app \
+              -r "tools_bin=${TOOLS_BIN}" \
+              -r build_pkg=./cmd/shorty \
+              -r "output_bin=../../dist/shorty${EXE_EXT}"
+            "./dist/shorty${EXE_EXT}" -h
+
+      lint-solutions:
+        displayName: Lint & Bundle-Check scafctl Solutions
+        description: Validate all scafctl solution/action YAML files and verify scafctl/solution.yaml bundle integrity
+        provider: exec
+        timeout: 3m
+        inputs:
+          passthrough: true
+          command: |
+            set -e
+            scafctl lint -f ./actions.yaml
+            scafctl lint -f ./ci/go-ci/actions.yaml
+            scafctl lint -f ./scafctl/solution.yaml
+            if ! cmp -s ./ci/go-ci/actions.yaml ./scafctl/go-ci/actions.yaml; then
+              echo "ci/go-ci/actions.yaml and scafctl/go-ci/actions.yaml are out of sync" >&2
+              exit 1
+            fi
+            scafctl package solution -f ./scafctl/solution.yaml --dry-run --skip-tests --no-vendor
+
+      test-solutions:
+        displayName: Functional Tests (scafctl)
+        description: Run scafctl functional test suites across repository solutions
+        provider: exec
+        dependsOn:
+          - lint-solutions
+        timeout: 5m
+        inputs:
+          passthrough: true
+          command: |
+            set -e
+            scafctl test functional -f ./actions.yaml
+            scafctl test functional -f ./ci/go-ci/actions.yaml
+            scafctl test functional -f ./scafctl/solution.yaml
+
+      docs-build:
+        displayName: Build Hugo Docs
+        description: Build the Hugo documentation site into ./public with minification
+        provider: exec
+        dependsOn:
+          - install-tools
+        timeout: 5m
+        inputs:
+          passthrough: true
+          env:
+            TARGET_OS:
+              expr: "_.platform.os"
+            TOOLS_BIN:
+              rslvr: tools_bin
+            HUGO_ENVIRONMENT: production
+          command: |
+            set -e
+            PATH_SEP=":"
+            if [ "$TARGET_OS" = "windows" ]; then
+              PATH_SEP=";"
+            fi
+            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+            if [ -f ./site/hugo.yaml ]; then
+              cd site
+              hugo --gc --minify
+            else
+              echo "site/hugo.yaml not yet scaffolded; skipping hugo build."
+            fi
+
+      docs-serve:
+        displayName: Serve Hugo Docs Locally
+        description: Start a live-reloading Hugo server at http://localhost:1313
+        explicit: true
+        provider: exec
+        dependsOn:
+          - install-tools
+        inputs:
+          passthrough: true
+          env:
+            TARGET_OS:
+              expr: "_.platform.os"
+            TOOLS_BIN:
+              rslvr: tools_bin
+          command: |
+            PATH_SEP=":"
+            if [ "$TARGET_OS" = "windows" ]; then
+              PATH_SEP=";"
+            fi
+            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+            cd site
+            hugo server -D
+
+      configure-github:
+        displayName: Configure GitHub Repository Settings
+        description: Apply preferred oakwood-commons merge, DCO, signed-commit, Copilot review, and Pages rulesets
+        explicit: true
+        provider: exec
+        timeout: 3m
+        inputs:
+          passthrough: true
+          env:
+            GH_OWNER:
+              rslvr: owner
+            GH_REPO:
+              rslvr: repo
+            REQ_APPROVALS:
+              expr: "string(_.required_approvals)"
+          command: |
+            scafctl run solution -f ./scafctl/solution.yaml \
+              --action configure-github \
+              -r "owner=${GH_OWNER}" \
+              -r "repo=${GH_REPO}" \
+              -r "required_approvals=${REQ_APPROVALS}" \
+              -r enable_pages=true
+
+      ci:
+        displayName: Full Repository CI
+        description: Run Go CI, scafctl lint/functional tests, and Hugo static site build
+        provider: static
+        dependsOn:
+          - go-ci
+          - test-solutions
+          - docs-build
+        inputs:
+          value:
+            status: passed
+
+  testing:
+    cases:
+      resolve-repo-defaults:
+        description: Verify repository action resolvers populate expected defaults
+        command: [run, resolver]
+        args: [-o, json]
+        exitCode: 0
+        assertions:
+          - expression: '__output.owner == "oakwood-commons"'
+            message: Default owner should be oakwood-commons
+          - expression: '__output.repo == "sln-agentic-code"'
+            message: Default repo should be sln-agentic-code
+          - expression: '__output.hugo_version == "0.155.2"'
+            message: Default Hugo version should be 0.155.2

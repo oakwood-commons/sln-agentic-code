@@ -1,0 +1,41 @@
+{{- if and (in .RelPermalink "/docs/walkthrough/") .IsPage -}}
+  {{- $pages := .CurrentSection.RegularPages.ByWeight -}}
+  {{- $total := len $pages -}}
+  {{- $currentIdx := 0 -}}
+  {{- range $i, $p := $pages -}}
+    {{- if eq $p.RelPermalink $.RelPermalink -}}
+      {{- $currentIdx = $i -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $stepNum := add $currentIdx 1 -}}
+  <div class="bp-walkthrough-bar" role="navigation" aria-label="Walkthrough progress">
+    <div class="bp-wt-meta">
+      <span class="bp-wt-badge">
+        <span class="bp-dot" aria-hidden="true"></span>
+        WALKTHROUGH // STEP {{ printf "%02d" $stepNum }} OF {{ printf "%02d" $total }}
+      </span>
+      {{- with .Params.duration -}}
+      <span class="bp-wt-duration">{{ . }}</span>
+      {{- end -}}
+    </div>
+    <div class="bp-wt-track" style="grid-template-columns: repeat({{ $total }}, minmax(0, 1fr));">
+      {{- range $i, $p := $pages -}}
+        {{- $n := add $i 1 -}}
+        {{- $stateClass := "is-upcoming" -}}
+        {{- if lt $i $currentIdx -}}
+          {{- $stateClass = "is-done" -}}
+        {{- else if eq $i $currentIdx -}}
+          {{- $stateClass = "is-current" -}}
+        {{- end -}}
+        <a class="bp-wt-node {{ $stateClass }}" href="{{ $p.RelPermalink }}" title="{{ $p.Title }}"{{ if eq $i $currentIdx }} aria-current="step"{{ end }}>
+          <span>{{ printf "%02d" $n }}</span>
+        </a>
+      {{- end -}}
+    </div>
+    {{- with .Params.goal -}}
+    <div class="bp-wt-goal">
+      <span class="bp-wt-goal-label">WHY THIS STEP:</span> {{ . }}
+    </div>
+    {{- end -}}
+  </div>
+{{- end -}}

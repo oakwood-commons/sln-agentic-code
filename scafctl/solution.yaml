@@ -1,0 +1,793 @@
+# Agentic Coding Setup & Repository Starter Solution (agentic-code).
+#
+# Usage (from published official catalog -- zero git clone required):
+#   1. Default workflow -- initialize user-level OpenCode setup (~/.config/opencode):
+#      scafctl run solution agentic-code --dry-run
+#      scafctl run solution agentic-code
+#      scafctl run solution agentic-code -r profile=ollama-hybrid
+#
+#   2. Opt-in action -- scaffold repo-level AI contracts & Go CI (AGENTS.md, REVIEW.md, .github/copilot-instructions.md):
+#      scafctl run solution agentic-code --action init-repo -r repo_dir=/path/to/repo -r project_name=my-service -r module_name=github.com/my-org/my-service
+#
+#   3. Opt-in action -- configure GitHub repository settings & rulesets (squash-only PR_TITLE/PR_BODY, signed commits, Copilot review_on_push:false):
+#      scafctl run solution agentic-code --action configure-github -r owner=my-org -r repo=my-service
+#
+# (When running from a local repository clone before catalog publish, replace "agentic-code" with "-f ./scafctl/solution.yaml".)
+
+apiVersion: scafctl.io/v1
+kind: Solution
+
+metadata:
+  name: agentic-code
+  version: 0.1.0
+  displayName: Agentic Coding Setup & Repo Starter
+  category: starter
+  tags:
+    - agentic-coding
+    - opencode
+    - github
+    - copilot
+    - go
+  description: |
+    Initializes a developer's personal OpenCode environment by default
+    (~/.config/opencode skills, agents, commands, and scafctl MCP), with opt-in
+    actions to scaffold repository-level AI contracts (AGENTS.md, REVIEW.md,
+    Copilot instructions, and portable Go CI) and configure GitHub repository
+    settings and rulesets idempotently.
+
+bundle:
+  include:
+    - user-opencode/**
+    - repo/**
+    - go-ci/**
+  plugins:
+    - name: directory
+      kind: provider
+      version: latest
+    - name: env
+      kind: provider
+      version: latest
+    - name: exec
+      kind: provider
+      version: latest
+    - name: github
+      kind: provider
+      version: latest
+
+spec:
+  resolvers:
+    env_home:
+      description: POSIX HOME directory when set
+      internal: true
+      type: string
+      resolve:
+        with:
+          - provider: env
+            inputs:
+              operation: get
+              name: HOME
+              default: ""
+              raw: true
+
+    env_userprofile:
+      description: Windows USERPROFILE directory when set
+      internal: true
+      type: string
+      resolve:
+        with:
+          - provider: env
+            inputs:
+              operation: get
+              name: USERPROFILE
+              default: ""
+              raw: true
+
+    default_config_dir:
+      description: Default home-based OpenCode config path
+      internal: true
+      type: string
+      resolve:
+        with:
+          - provider: cel
+            inputs:
+              expression: '(_.env_home != "" ? _.env_home : (_.env_userprofile != "" ? _.env_userprofile : ".")) + "/.config/opencode"'
+
+    config_dir:
+      description: Destination directory for user-level OpenCode files
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: config_dir
+          - provider: cel
+            inputs:
+              expression: "_.default_config_dir"
+
+    profile:
+      description: OpenCode configuration template to install (cloud or ollama-hybrid)
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: profile
+          - provider: static
+            inputs:
+              value: "cloud"
+      validate:
+        with:
+          - provider: validation
+            inputs:
+              expression: '__self in ["cloud", "ollama-hybrid"]'
+            message: "profile must be 'cloud' or 'ollama-hybrid'"
+
+    repo_dir:
+      description: Target repository directory for init-repo
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: repo_dir
+          - provider: static
+            inputs:
+              value: "."
+
+    project_name:
+      description: Short project or repository name rendered into repo contract templates
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: project_name
+          - provider: static
+            inputs:
+              value: "my-go-service"
+
+    module_name:
+      description: Go module path rendered into AGENTS.md
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: module_name
+          - provider: cel
+            inputs:
+              expression: '"github.com/example/" + _.project_name'
+
+    min_coverage:
+      description: Minimum statement coverage percentage rendered into repo contracts
+      type: int
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: min_coverage
+          - provider: static
+            inputs:
+              value: 70
+      validate:
+        with:
+          - provider: validation
+            inputs:
+              expression: "__self >= 0 && __self <= 100"
+            message: "min_coverage must be between 0 and 100"
+
+    include_go_ci:
+      description: Copy portable ci/go-ci/actions.yaml into the target repository during init-repo
+      type: bool
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: include_go_ci
+          - provider: static
+            inputs:
+              value: true
+
+    owner:
+      description: GitHub organization or user login for configure-github
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: owner
+          - provider: static
+            inputs:
+              value: ""
+      validate:
+        with:
+          - provider: validation
+            when:
+              expr: '__self != ""'
+            inputs:
+              match: '^[A-Za-z0-9_.-]+$'
+              expression: '__self != "." && __self != ".."'
+            message: "owner must contain only GitHub login characters (alphanumeric, hyphen, underscore, dot)"
+
+    repo:
+      description: GitHub repository name for configure-github
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: repo
+          - provider: static
+            inputs:
+              value: ""
+      validate:
+        with:
+          - provider: validation
+            when:
+              expr: '__self != ""'
+            inputs:
+              match: '^[A-Za-z0-9_.-]+$'
+              expression: '__self != "." && __self != ".."'
+            message: "repo must contain only GitHub repository name characters (alphanumeric, hyphen, underscore, dot)"
+
+    require_signed_commits:
+      description: Enforce signed commits across all branches in configure-github
+      type: bool
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: require_signed_commits
+          - provider: static
+            inputs:
+              value: true
+
+    enable_copilot_ruleset:
+      description: Configure GitHub Copilot code review on PR open with review_on_push=false
+      type: bool
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: enable_copilot_ruleset
+          - provider: static
+            inputs:
+              value: true
+
+    required_approvals:
+      description: Required PR approvals on default branch (use 1 for org teams, 0 for solo personal repos)
+      type: int
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: required_approvals
+          - provider: static
+            inputs:
+              value: 1
+      validate:
+        with:
+          - provider: validation
+            inputs:
+              expression: "__self >= 0 && __self <= 10"
+            message: "required_approvals must be between 0 and 10"
+
+    org_admin_bypass:
+      description: Add OrganizationAdmin bypass actor when configuring a GitHub Organization repository
+      type: bool
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: org_admin_bypass
+          - provider: cel
+            inputs:
+              expression: "_.required_approvals > 0"
+
+    enable_pages:
+      description: Enable GitHub Pages with GitHub Actions workflow build mode
+      type: bool
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: enable_pages
+          - provider: static
+            inputs:
+              value: false
+
+    user_tree:
+      description: User-level OpenCode starter files bundled in user-opencode/
+      internal: true
+      resolve:
+        with:
+          - provider: directory
+            inputs:
+              operation: list
+              path: ./user-opencode
+              recursive: true
+              filesOnly: true
+              includeContent: true
+              excludeHidden: false
+              relativeTo: solution
+
+    user_shared_entries:
+      description: User-level agents, commands, skills, instructions, and notices
+      internal: true
+      resolve:
+        with:
+          - provider: cel
+            inputs:
+              expression: '_.user_tree.entries.filter(e, !e.path.startsWith("opencode."))'
+
+    selected_opencode_config:
+      description: Selected opencode.jsonc content matching profile and resolved config_dir
+      internal: true
+      type: string
+      resolve:
+        with:
+          - provider: file
+            inputs:
+              operation: read
+              relativeTo: solution
+              path:
+                expr: '"./user-opencode/opencode." + _.profile + ".jsonc"'
+      transform:
+        with:
+          - provider: cel
+            inputs:
+              expression: |
+                _.config_dir == _.default_config_dir
+                  ? __self.content
+                  : __self.content.replace("~/.config/opencode/instructions/workflow-policy.md", _.config_dir + "/instructions/workflow-policy.md")
+
+    go_ci_source:
+      description: Portable Go CI actions.yaml bundled under go-ci/actions.yaml
+      internal: true
+      resolve:
+        with:
+          - provider: file
+            inputs:
+              operation: read
+              path: ./go-ci/actions.yaml
+              relativeTo: solution
+
+    repo_template_tree:
+      description: Rendered repository-level AI contract templates from repo/
+      internal: true
+      resolve:
+        with:
+          - provider: directory
+            inputs:
+              operation: list
+              path: ./repo
+              recursive: true
+              filesOnly: true
+              includeContent: true
+              excludeHidden: false
+              relativeTo: solution
+      transform:
+        with:
+          - provider: go-template
+            inputs:
+              operation: render-tree
+              name: repo-contract-templates
+              entries:
+                expr: "__self.entries"
+              data:
+                expr: |
+                  {
+                    "project_name": _.project_name,
+                    "module_name": _.module_name,
+                    "min_coverage": _.min_coverage,
+                    "include_go_ci": _.include_go_ci && _.go_ci_source.content != ""
+                  }
+
+  workflow:
+    actions:
+      write-user-tree:
+        displayName: Write User Skills, Agents & Commands
+        description: Copy agnostic OpenCode skills, agents, commands, and instructions into config_dir
+        provider: file
+        inputs:
+          operation: write-tree
+          basePath:
+            rslvr: config_dir
+          entries:
+            rslvr: user_shared_entries
+          onConflict: skip-unchanged
+          backup: true
+          permissions: "0644"
+
+      write-user-config:
+        displayName: Write User opencode.jsonc
+        description: Write the selected OpenCode profile (cloud or ollama-hybrid) to opencode.jsonc
+        dependsOn:
+          - write-user-tree
+        provider: file
+        inputs:
+          operation: write
+          path:
+            expr: '_.config_dir + "/opencode.jsonc"'
+          content:
+            rslvr: selected_opencode_config
+          createDirs: true
+          onConflict: skip-unchanged
+          backup: true
+          permissions: "0600"
+
+      install-user:
+        displayName: Install User OpenCode Setup
+        description: Install personal OpenCode skills, agents, commands, and opencode.jsonc with .bak backups
+        dependsOn:
+          - write-user-config
+        provider: static
+        inputs:
+          value:
+            installed_to:
+              rslvr: config_dir
+            profile:
+              rslvr: profile
+
+      write-repo-contracts:
+        displayName: Write Repo AI Contracts
+        description: Render AGENTS.md, REVIEW.md, and .github/copilot-instructions.md into repo_dir
+        explicit: true
+        provider: file
+        inputs:
+          operation: write-tree
+          basePath:
+            rslvr: repo_dir
+          entries:
+            rslvr: repo_template_tree
+          stripSuffix: ".tmpl"
+          onConflict: skip-unchanged
+          backup: true
+          permissions: "0644"
+
+      write-repo-go-ci:
+        displayName: Write Portable Go CI Workflow
+        description: Copy ci/go-ci/actions.yaml into repo_dir when include_go_ci is enabled
+        explicit: true
+        dependsOn:
+          - write-repo-contracts
+        when:
+          expr: '_.include_go_ci && _.go_ci_source.content != ""'
+        provider: file
+        inputs:
+          operation: write
+          path:
+            expr: '_.repo_dir + "/ci/go-ci/actions.yaml"'
+          content:
+            expr: "_.go_ci_source.content"
+          createDirs: true
+          onConflict: skip-unchanged
+          backup: true
+          permissions: "0644"
+
+      init-repo:
+        displayName: Initialize Repository Contracts
+        description: Scaffold AGENTS.md, REVIEW.md, Copilot instructions, and optional Go CI into repo_dir
+        explicit: true
+        dependsOn:
+          - write-repo-contracts
+          - write-repo-go-ci
+        provider: static
+        inputs:
+          value:
+            initialized_repo:
+              rslvr: repo_dir
+            project_name:
+              rslvr: project_name
+            module_name:
+              rslvr: module_name
+
+      verify-github-target:
+        displayName: Verify GitHub Owner & Repo Parameters
+        description: Ensure owner and repo parameters were supplied before calling the GitHub API
+        explicit: true
+        provider: exec
+        inputs:
+          env:
+            GH_OWNER:
+              rslvr: owner
+            GH_REPO:
+              rslvr: repo
+          command: |
+            if [ -z "$GH_OWNER" ] || [ -z "$GH_REPO" ]; then
+              echo "Both -r owner=<org-or-user> and -r repo=<repo-name> are required for configure-github." >&2
+              exit 1
+            fi
+            echo "Configuring GitHub repository: ${GH_OWNER}/${GH_REPO}"
+
+      github-repo-settings:
+        displayName: Update Merge & Sign-Off Settings
+        description: Enforce squash-only merges using PR_TITLE and PR_BODY, branch cleanup, and web DCO sign-off
+        explicit: true
+        dependsOn:
+          - verify-github-target
+        provider: github
+        inputs:
+          operation: api_call
+          method: PATCH
+          endpoint:
+            expr: '"/repos/" + _.owner + "/" + _.repo'
+          request_body:
+            allow_squash_merge: true
+            allow_merge_commit: false
+            allow_rebase_merge: false
+            allow_auto_merge: false
+            delete_branch_on_merge: true
+            squash_merge_commit_title: "PR_TITLE"
+            squash_merge_commit_message: "PR_BODY"
+            web_commit_signoff_required: true
+            has_issues: true
+            has_wiki: false
+
+      github-security-alerts:
+        displayName: Enable Vulnerability Alerts
+        description: Enable Dependabot vulnerability alerts on the repository
+        explicit: true
+        dependsOn:
+          - verify-github-target
+        provider: github
+        inputs:
+          operation: enable_vulnerability_alerts
+          owner:
+            rslvr: owner
+          repo:
+            rslvr: repo
+
+      github-list-rulesets:
+        displayName: Inspect Existing Repository Rulesets
+        description: Fetch repository-scoped rulesets (excluding inherited org rulesets) so upserts match in place
+        explicit: true
+        dependsOn:
+          - github-repo-settings
+        provider: github
+        inputs:
+          operation: api_call
+          method: GET
+          endpoint:
+            expr: '"/repos/" + _.owner + "/" + _.repo + "/rulesets"'
+          query_params:
+            includes_parents: "false"
+            per_page: "100"
+
+      github-copilot-ruleset:
+        displayName: Upsert Copilot Code Review Ruleset
+        description: Protect default branch from force-push/deletion and enable Copilot PR review on open only (review_on_push=false)
+        explicit: true
+        dependsOn:
+          - github-list-rulesets
+        when:
+          expr: "_.enable_copilot_ruleset"
+        provider: github
+        inputs:
+          operation: api_call
+          method:
+            expr: |
+              size(__actions["github-list-rulesets"].results.result.filter(r, r.source_type == "Repository" && r.name == "Copilot review for default branch")) > 0 ? "PUT" : "POST"
+          endpoint:
+            expr: |
+              size(__actions["github-list-rulesets"].results.result.filter(r, r.source_type == "Repository" && r.name == "Copilot review for default branch")) > 0
+                ? "/repos/" + _.owner + "/" + _.repo + "/rulesets/" + string(__actions["github-list-rulesets"].results.result.filter(r, r.source_type == "Repository" && r.name == "Copilot review for default branch")[0].id)
+                : "/repos/" + _.owner + "/" + _.repo + "/rulesets"
+          request_body:
+            name: "Copilot review for default branch"
+            target: "branch"
+            enforcement: "active"
+            conditions:
+              ref_name:
+                include: ["~DEFAULT_BRANCH"]
+                exclude: []
+            rules:
+              - type: "deletion"
+              - type: "non_fast_forward"
+              - type: "copilot_code_review"
+                parameters:
+                  review_on_push: false
+                  review_draft_pull_requests: false
+
+      github-signed-commits-ruleset:
+        displayName: Upsert Signed Commits Ruleset
+        description: Require cryptographic commit signatures across all branches
+        explicit: true
+        dependsOn:
+          - github-list-rulesets
+        when:
+          expr: "_.require_signed_commits"
+        provider: github
+        inputs:
+          operation: api_call
+          method:
+            expr: |
+              size(__actions["github-list-rulesets"].results.result.filter(r, r.source_type == "Repository" && r.name == "all-branches-signed-commits")) > 0 ? "PUT" : "POST"
+          endpoint:
+            expr: |
+              size(__actions["github-list-rulesets"].results.result.filter(r, r.source_type == "Repository" && r.name == "all-branches-signed-commits")) > 0
+                ? "/repos/" + _.owner + "/" + _.repo + "/rulesets/" + string(__actions["github-list-rulesets"].results.result.filter(r, r.source_type == "Repository" && r.name == "all-branches-signed-commits")[0].id)
+                : "/repos/" + _.owner + "/" + _.repo + "/rulesets"
+          request_body:
+            name: "all-branches-signed-commits"
+            target: "branch"
+            enforcement: "active"
+            conditions:
+              ref_name:
+                include: ["~ALL"]
+                exclude: []
+            rules:
+              - type: "required_signatures"
+
+      github-default-branch-ruleset:
+        displayName: Upsert Default Branch PR Ruleset
+        description: Require PR squash merges, resolved review threads, stale-review dismissal, and configured approvals
+        explicit: true
+        dependsOn:
+          - github-list-rulesets
+        provider: github
+        inputs:
+          operation: api_call
+          method:
+            expr: |
+              size(__actions["github-list-rulesets"].results.result.filter(r, r.source_type == "Repository" && r.name == "default-branch")) > 0 ? "PUT" : "POST"
+          endpoint:
+            expr: |
+              size(__actions["github-list-rulesets"].results.result.filter(r, r.source_type == "Repository" && r.name == "default-branch")) > 0
+                ? "/repos/" + _.owner + "/" + _.repo + "/rulesets/" + string(__actions["github-list-rulesets"].results.result.filter(r, r.source_type == "Repository" && r.name == "default-branch")[0].id)
+                : "/repos/" + _.owner + "/" + _.repo + "/rulesets"
+          request_body:
+            expr: |
+              {
+                "name": "default-branch",
+                "target": "branch",
+                "enforcement": "active",
+                "bypass_actors": (_.org_admin_bypass && __actions["github-repo-settings"].results.result.owner.type == "Organization") ? [
+                  {
+                    "actor_id": null,
+                    "actor_type": "OrganizationAdmin",
+                    "bypass_mode": "always"
+                  }
+                ] : [],
+                "conditions": {
+                  "ref_name": {
+                    "include": ["~DEFAULT_BRANCH"],
+                    "exclude": []
+                  }
+                },
+                "rules": [
+                  {
+                    "type": "pull_request",
+                    "parameters": {
+                      "required_approving_review_count": _.required_approvals,
+                      "dismiss_stale_reviews_on_push": true,
+                      "require_code_owner_review": false,
+                      "require_last_push_approval": _.required_approvals > 0,
+                      "required_review_thread_resolution": true,
+                      "allowed_merge_methods": ["squash"]
+                    }
+                  }
+                ]
+              }
+
+      github-pages:
+        displayName: Upsert GitHub Pages (Workflow Mode)
+        description: Enable or update GitHub Pages to use GitHub Actions workflow builds
+        explicit: true
+        dependsOn:
+          - github-repo-settings
+        when:
+          expr: "_.enable_pages"
+        provider: github
+        inputs:
+          operation: api_call
+          method:
+            expr: '__actions["github-repo-settings"].results.result.has_pages ? "PUT" : "POST"'
+          endpoint:
+            expr: '"/repos/" + _.owner + "/" + _.repo + "/pages"'
+          request_body:
+            build_type: "workflow"
+
+      configure-github:
+        displayName: GitHub Repository Configured
+        description: Apply preferred merge, security, signed-commit, PR thread, Copilot review, and Pages settings
+        explicit: true
+        dependsOn:
+          - github-security-alerts
+          - github-copilot-ruleset
+          - github-signed-commits-ruleset
+          - github-default-branch-ruleset
+          - github-pages
+        provider: static
+        inputs:
+          value:
+            configured_repo:
+              expr: '_.owner + "/" + _.repo'
+            copilot_review_on_push: false
+            require_signed_commits:
+              rslvr: require_signed_commits
+            required_approvals:
+              rslvr: required_approvals
+
+  testing:
+    cases:
+      _starter-files:
+        description: Shared starter files mounted into isolated functional test sandboxes
+        files:
+          - user-opencode/
+          - repo/
+          - go-ci/
+
+      resolve-starter-defaults:
+        extends: [_starter-files]
+        description: Verify default starter parameters and template trees resolve cleanly
+        command: [run, resolver]
+        args: [-o, json]
+        exitCode: 0
+        assertions:
+          - expression: '__output.profile == "cloud"'
+            message: Default profile should be cloud
+          - expression: "__output.min_coverage == 70"
+            message: Default min_coverage should be 70
+
+      scaffold-user-config:
+        extends: [_starter-files]
+        description: Run default solution workflow to install user-level OpenCode cloud profile into a sandboxed config_dir
+        command: [run, solution]
+        args: [-r, config_dir=./sandbox-opencode, -r, profile=cloud, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: "size(__output) > 0"
+            message: Default solution workflow should emit non-empty structured output
+
+      scaffold-user-ollama-profile:
+        extends: [_starter-files]
+        description: Run default solution workflow with ollama-hybrid profile into a sandboxed config_dir
+        command: [run, solution]
+        args: [-r, config_dir=./sandbox-ollama, -r, profile=ollama-hybrid, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: "size(__output) > 0"
+            message: Default solution workflow with ollama-hybrid should emit non-empty structured output
+
+      scaffold-repo-contracts:
+        extends: [_starter-files]
+        description: Render repo-level AGENTS.md, REVIEW.md, Copilot instructions, and Go CI into a sandboxed repo_dir
+        command: [run, solution]
+        args:
+          - --action
+          - init-repo
+          - -r
+          - repo_dir=./sandbox-repo
+          - -r
+          - project_name=payments-api
+          - -r
+          - module_name=github.com/acme/payments-api
+          - -r
+          - include_go_ci=true
+          - -o
+          - json
+        exitCode: 0
+        assertions:
+          - expression: "size(__output) > 0"
+            message: init-repo explicit action should emit non-empty structured output
+
+      reject-invalid-profile:
+        extends: [_starter-files]
+        description: Reject unsupported OpenCode profile names
+        command: [run, resolver]
+        args: [-r, profile=nonexistent, --on-validation-error, error, -o, json]
+        exitCode: 2
+        assertions:
+          - expression: '__output.__status == "failed"'
+            message: Invalid profile should report failed validation status
+
+      reject-invalid-owner:
+        extends: [_starter-files]
+        description: Reject malformed GitHub owner values containing slashes or traversal segments
+        command: [run, resolver]
+        args: [-r, owner=bad/owner, --on-validation-error, error, -o, json]
+        exitCode: 2
+        assertions:
+          - expression: '__output.__status == "failed"'
+            message: Invalid owner should report failed validation status

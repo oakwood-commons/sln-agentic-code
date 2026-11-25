@@ -1,0 +1,107 @@
+name: Release & Publish Solution
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  publish:
+    name: Verify, Package & Push Solution to GHCR
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
+    outputs:
+      image_ref: ${{ steps.push.outputs.image_ref }}
+    env:
+      SCAFCTL_VERSION: "0.47.0"
+      SOLUTION_NAME: "agentic-code"
+      CATALOG_REGISTRY: "ghcr.io/oakwood-commons"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: examples/go-app/go.mod
+          cache: true
+          cache-dependency-path: site/go.sum
+
+      - name: Install scafctl
+        run: |
+          set -euo pipefail
+          TOOLS_BIN="${GITHUB_WORKSPACE}/.tool/bin"
+          mkdir -p "$TOOLS_BIN"
+          echo "$TOOLS_BIN" >> "$GITHUB_PATH"
+          ARCHIVE="scafctl_${SCAFCTL_VERSION}_Linux_x86_64.tar.gz"
+          URL="https://github.com/oakwood-commons/scafctl/releases/download/v${SCAFCTL_VERSION}/${ARCHIVE}"
+          (
+            TMP_DIR="$(mktemp -d)"
+            trap 'rm -rf "$TMP_DIR"' EXIT
+            curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+            tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+            cp "${TMP_DIR}/scafctl" "${TOOLS_BIN}/scafctl"
+            chmod +x "${TOOLS_BIN}/scafctl"
+          )
+
+      - name: Run full repository CI before publishing
+        run: scafctl run action ci
+
+      - name: Log in to GHCR
+        uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.CATALOG_PUSH_TOKEN || secrets.GITHUB_TOKEN }}
+
+      - name: Package and push solution to GHCR catalog
+        id: push
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          scafctl package solution -f ./scafctl/solution.yaml \
+            --name "${SOLUTION_NAME}" \
+            --version "${VERSION}" \
+            --no-vendor \
+            --force
+          scafctl catalog push solution "${SOLUTION_NAME}@${VERSION}" \
+            --catalog "${CATALOG_REGISTRY}" \
+            --force
+          scafctl catalog index push --catalog "${CATALOG_REGISTRY}"
+
+          DIGEST="$(scafctl catalog inspect "${SOLUTION_NAME}@${VERSION}" --catalog "${CATALOG_REGISTRY}" -o json | jq -r '.digest')"
+          if [ -z "$DIGEST" ] || [ "$DIGEST" = "null" ]; then
+            echo "Failed to resolve pushed OCI digest for ${SOLUTION_NAME}@${VERSION}" >&2
+            exit 1
+          fi
+          IMAGE_REF="${CATALOG_REGISTRY}/solutions/${SOLUTION_NAME}@${DIGEST}"
+          echo "Published ${IMAGE_REF}"
+          echo "image_ref=${IMAGE_REF}" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --verify-tag \
+            --generate-notes
+
+  sign:
+    name: Sign Solution & SBOM Referrers (Cosign Keyless)
+    needs: [publish]
+    permissions:
+      id-token: write
+      packages: write
+    uses: oakwood-commons/scafctl/.github/workflows/sign-plugin.yml@sign-plugin/v1
+    with:
+      image-ref: ${{ needs.publish.outputs.image_ref }}

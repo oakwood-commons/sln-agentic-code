@@ -1,0 +1,65 @@
+# Tekton v1 Pipeline chaining repository checkout with scafctl-go-ci.
+#
+# Prerequisite:
+#   Install the standard git-clone Task from Tekton Hub / Catalog, then apply:
+#     kubectl apply -f ci/tekton/go-ci-task.yaml
+#     kubectl apply -f ci/tekton/go-ci-pipeline.yaml
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: scafctl-go-ci-pipeline
+  labels:
+    app.kubernetes.io/part-of: go-ci
+spec:
+  description: Clone a Go repository and execute its portable scafctl Go CI workflow.
+  workspaces:
+    - name: shared-workspace
+      description: Shared PVC or emptyDir workspace holding the cloned repository
+  params:
+    - name: repo-url
+      type: string
+      description: Git repository URL to clone
+    - name: revision
+      type: string
+      description: Git branch, tag, or commit SHA to check out
+      default: main
+    - name: workdir
+      type: string
+      description: Go module directory relative to repository root
+      default: "."
+    - name: build-pkg
+      type: string
+      description: Go package pattern to compile
+      default: "./..."
+    - name: min-coverage
+      type: string
+      description: Minimum statement coverage percentage (0-100)
+      default: "70"
+  tasks:
+    - name: fetch-source
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      params:
+        - name: url
+          value: $(params.repo-url)
+        - name: revision
+          value: $(params.revision)
+
+    - name: go-ci
+      runAfter:
+        - fetch-source
+      taskRef:
+        name: scafctl-go-ci
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      params:
+        - name: workdir
+          value: $(params.workdir)
+        - name: build-pkg
+          value: $(params.build-pkg)
+        - name: min-coverage
+          value: $(params.min-coverage)

@@ -1,0 +1,90 @@
+# Copy-and-adapt GitHub Actions workflow wrapping ci/go-ci/actions.yaml.
+#
+# Copy this file to .github/workflows/ci.yml in your Go repository alongside
+# ci/go-ci/actions.yaml. All Go check logic lives inside scafctl so local runs,
+# GitHub Actions, and Tekton execute the exact same pipeline.
+name: Go CI (scafctl)
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: go-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  go-ci:
+    name: Go CI
+    runs-on: ubuntu-latest
+    env:
+      SCAFCTL_VERSION: "0.47.0"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Go
+        uses: actions/setup-go@d8cbb8045d7f43706b9177cceb36c1f91a6644d5 # v7.1.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Cache scafctl & CI tools
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .tool/bin
+          key: tools-${{ runner.os }}-${{ runner.arch }}-scafctl-${{ env.SCAFCTL_VERSION }}-${{ hashFiles('ci/go-ci/actions.yaml') }}
+
+      - name: Install scafctl
+        run: |
+          set -euo pipefail
+          TOOLS_BIN="${GITHUB_WORKSPACE}/.tool/bin"
+          mkdir -p "$TOOLS_BIN"
+          echo "$TOOLS_BIN" >> "$GITHUB_PATH"
+
+          case "${RUNNER_ARCH}" in
+            X64) SCAFCTL_ARCH="x86_64" ;;
+            ARM64) SCAFCTL_ARCH="arm64" ;;
+            *) echo "Unsupported RUNNER_ARCH: ${RUNNER_ARCH}" >&2; exit 1 ;;
+          esac
+
+          if [ "${RUNNER_OS}" = "Windows" ]; then
+            BIN_NAME="scafctl.exe"
+            ARCHIVE="scafctl_${SCAFCTL_VERSION}_Windows_${SCAFCTL_ARCH}.zip"
+          else
+            BIN_NAME="scafctl"
+            ARCHIVE="scafctl_${SCAFCTL_VERSION}_${RUNNER_OS}_${SCAFCTL_ARCH}.tar.gz"
+          fi
+
+          if [ ! -x "${TOOLS_BIN}/${BIN_NAME}" ]; then
+            URL="https://github.com/oakwood-commons/scafctl/releases/download/v${SCAFCTL_VERSION}/${ARCHIVE}"
+            (
+              TMP_DIR="$(mktemp -d)"
+              trap 'rm -rf "$TMP_DIR"' EXIT
+              curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+              if [ "${RUNNER_OS}" = "Windows" ]; then
+                tar.exe -xf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+              else
+                tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+              fi
+              cp "${TMP_DIR}/${BIN_NAME}" "${TOOLS_BIN}/${BIN_NAME}"
+              chmod +x "${TOOLS_BIN}/${BIN_NAME}"
+            )
+          fi
+          "${TOOLS_BIN}/${BIN_NAME}" version
+
+      - name: Run portable Go CI via scafctl
+        run: |
+          scafctl run action ci -f ./ci/go-ci/actions.yaml \
+            -r workdir=. \
+            -r build_pkg=./... \
+            -r min_coverage=70
