@@ -1,6 +1,6 @@
 ---
 name: publish-hygiene
-description: "Use before posting or committing to any public repository's external surfaces (GitHub issues, PR titles/bodies/comments, commit messages, or committed docs/examples/skills) to check for and scrub secrets, local filesystem paths (/home/<user>), private hostnames/domains, internal tool names, or non-public organization details."
+description: "Use before posting or committing to any public repository (issues, PRs, commits, docs, or skills) to scrub secrets, local home paths (/home/<user>), private hostnames, internal tool names, and non-public organization details."
 ---
 
 # Public Repository Publish Hygiene

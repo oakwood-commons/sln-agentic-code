@@ -67,7 +67,7 @@ Replace `agentic-code` above with `-f ./scafctl/solution.yaml`.)*
 | Directory / File | Role |
 |---|---|
 | `scafctl/solution.yaml` | Published `agentic-code` solution (user OpenCode and/or Antigravity `agy` setup + opt-in `install-go`, `init-repo`, `configure-github`, and `list-files` actions) |
-| `scafctl/user-opencode/` | Single-source user-level starter configs (`cloud` default + `ollama-hybrid`), 11 subagents, 11 slash commands, and 25 skills (including `planner`, `create-issue`, `github-issues`, `jira-issues`, `local-issues`, `security-audit`, `security-sweep`, `publish-hygiene`, `herdr`, `work-herd`, and `pr-autopilot`, compiled automatically for `agy` when `-r harness=agy` or `both` is passed) |
+| `scafctl/user-opencode/` | Single-source user-level starter configs (`cloud` default + `ollama-hybrid`), 11 subagents, 12 slash commands, and 26 skills (including `planner`, `create-issue`, `github-issues`, `jira-issues`, `local-issues`, `security-audit`, `security-sweep`, `publish-hygiene`, `herdr`, `work-herd`, `pr-autopilot`, and `last-look`, compiled automatically for `agy` when `-r harness=agy` or `both` is passed) |
 | `scafctl/repo/` & `scafctl/go-ci/` | Bundled repo-contract templates (`AGENTS.md`, `REVIEW.md`, `.github/copilot-instructions.md`) and portable Go CI |
 | `docs/`, `home/`, `site/` | Hugo (`hugo-book`) 5-step Guided Walkthrough, Advanced Herdr Workflows & Reference site styled with `scafctl`'s Blueprint theme |
 | `AGENTS.md`, `REVIEW.md`, `.github/copilot-instructions.md` | Dogfooded **repo-level contracts** defining what this repo requires without forcing personal AI workflows |

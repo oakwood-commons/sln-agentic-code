@@ -1795,8 +1795,8 @@ spec:
             message: Harness output should report agy
           - expression: '__output.actions["install-user"].results.installed_to == ""'
             message: Antigravity-only install should leave OpenCode installed_to empty
-          - expression: '__output.actions["install-user"].results.agy_skill_count == 39'
-            message: Antigravity install should export all 25 domain skills plus 9 role-agent skills and 5 standalone command skills
+          - expression: '__output.actions["install-user"].results.agy_skill_count == 40'
+            message: Antigravity install should export all 26 domain skills plus 9 role-agent skills and 5 standalone command skills
           - expression: '__output.actions["install-user"].results.agy_agent_count == 11'
             message: Antigravity install should export all 11 subagents
 

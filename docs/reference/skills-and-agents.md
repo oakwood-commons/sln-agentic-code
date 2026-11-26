@@ -40,6 +40,25 @@ and uses `scafctl` CEL transforms at install time to generate the extra
 Antigravity `SKILL.md` and `agent.md` files automatically when you pass
 `-r harness=agy` or `-r harness=both`.
 
+> [!TIP]
+> **Protect your `<skills>` context budget (especially in Antigravity `agy`):**
+> Harnesses inject every installed skill's `description:` into the `<skills>`
+> system-prompt block behind a strict character budget. Once that budget fills
+> up, trailing skills (alphabetically later names like `last-look` or
+> `work-herd`) are silently excluded from auto-discovery. Three habits prevent
+> truncation:
+> 1. **Keep `description:` frontmatter to 1 to 2 high-signal sentences**
+>    (trigger phrases + outcome), putting detailed rules inside the `SKILL.md`
+>    body where progressive disclosure loads them on demand.
+> 2. **Avoid duplicate skill directories:** In `agy`, keep one canonical user
+>    skill folder (`~/.gemini/config/skills/`, where `agentic-code` installs)
+>    rather than mirroring the same skills across `~/.gemini/antigravity-cli/skills/`,
+>    `~/.gemini/skills/`, and `~/.gemini/config/plugins/*/skills/` (which causes
+>    `agy` to print duplicate descriptions twice).
+> 3. **Archive unused domain packs:** Move rarely used vendor or data-pipeline
+>    skill packs out of active global skill folders so they never crowd out core
+>    daily engineering skills.
+
 ---
 
 ## Browse Included Playbooks
@@ -97,15 +116,18 @@ existing code from regressions, and diagnose Go concurrency or performance bugs.
 
 ---
 
-### 3. Pre-PR Self-Review & Bounded GitHub PR Loop
+### 3. Pre-PR Self-Review, Bounded PR Loop & Human Merge Walkthrough
 
-Used in **Steps 4 and 5** so the AI audits its own branch locally before pushing
-and drives GitHub Actions CI + GitHub Copilot reviews without burning quota.
+Used in **Steps 4 and 5** (and at the end of Herdr waves) so the AI audits its
+own branch locally before pushing, drives GitHub Actions CI + GitHub Copilot
+reviews without burning quota, and briefs you on ready PRs one at a time before
+you click Merge.
 
 <div class="bp-skill-list">
 {{< starter-drawer path="skills/finish-issue/SKILL.md" meta="/finish-issue" >}}
 {{< starter-drawer path="skills/git-github-workflow/SKILL.md" meta="/pr-create | /pr-review" >}}
 {{< starter-drawer path="skills/pr-autopilot/SKILL.md" meta="/pr-autopilot | waiter subagent" >}}
+{{< starter-drawer path="skills/last-look/SKILL.md" meta="/last-look | 1 PR per turn" >}}
 </div>
 
 ---
@@ -190,6 +212,7 @@ exported as companion `SKILL.md` playbooks instead)*:
 {{< starter-drawer path="commands/pr-create.md" >}}
 {{< starter-drawer path="commands/pr-review.md" >}}
 {{< starter-drawer path="commands/pr-autopilot.md" >}}
+{{< starter-drawer path="commands/last-look.md" >}}
 {{< starter-drawer path="commands/review-buster.md" >}}
 {{< starter-drawer path="commands/handoff.md" >}}
 </div>
