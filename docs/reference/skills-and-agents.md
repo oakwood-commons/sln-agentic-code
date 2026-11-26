@@ -12,8 +12,8 @@ reviews, or forces you to repeat boilerplate on every turn:
 | Primitive | When It Loads | Context Window | Trigger Reliability | Best Used For |
 |---|---|---|---|---|
 | **1. Chat Prompt** | Current turn only | Main chat | `100%` manual (you type it) | Your plain-English goal, *why*, and specific feature constraints for this task. |
-| **2. Standing Rules & Repo Contracts** (`AGENTS.md`, `REVIEW.md`, `workflow-policy.md`) | **Every turn** | Main chat | `100%` always-on | Short, universal invariants: build/test commands, issue tracker, safety limits (`gh pr merge`: `deny`). Keep concise so every turn stays lean. |
-| **3. [Skills](/docs/reference/glossary.md#skill)** (`skills/*/SKILL.md`) | **Progressive disclosure** -- only the 1-line `description` sits in context until matched | Main chat (or active subagent) | **Probabilistic** (model matches prose to `description`) | Deep domain playbooks (`tdd`, `create-issue`, `security-audit`, `go-perf`) needed on specific tasks without paying token cost on unrelated turns. |
+| **2. Standing Rules & Repo Contracts** (`AGENTS.md`, `REVIEW.md`, `workflow-policy.md`) | **Every turn** | Main chat | `100%` always-on | Short, universal invariants: build/test commands, safety limits (`gh pr merge`: `deny`). Keep concise so every turn stays lean. |
+| **3. [Skills](/docs/reference/glossary.md#skill)** (`skills/*/SKILL.md`) | **Progressive disclosure:** only the 1-line `description` sits in context until matched | Main chat (or active subagent) | **Probabilistic** (model matches prose to `description`) | Deep domain playbooks (`tdd`, `create-issue`, `jira-issues`, `security-audit`, `go-perf`) needed on specific tasks without paying token cost on unrelated turns. |
 | **4. [Subagents](/docs/reference/glossary.md#subagent)** (`agents/*.md`) | Only when delegated | **Fresh, isolated context** (with its own tools & model) | Delegated by skill, command, or main agent | Tasks needing **unbiased eyes** (`code-reviewer`, `security-auditor` with `edit: deny`), **separate models** (`review-buster`), or **noisy loops** (`waiter` polling CI without flooding main chat). |
 | **5. [Slash Commands](/docs/reference/glossary.md#slash-command)** (`commands/*.md`) | Only when you type `/name` | Main chat or target subagent | **`100%` deterministic** | Explicit overrides (`/plan`, `/create-issue`, `/finish-issue`, `/wait-what`) when you want to force a workflow rather than rely on prose matching. |
 
@@ -29,8 +29,8 @@ Not every coding harness exposes the same primitives:
   commands in `agy` are built-in rather than user-defined `commands/*.md` files,
   and skill-centric harnesses rely on `SKILL.md` playbooks whenever the main
   agent runs a review, handoff, or audit workflow inline. That means **`agy`
-  needs more skills** -- every role agent and standalone command workflow also
-  needs a companion `SKILL.md` in `~/.gemini/config/skills/` (alongside
+  needs more skills:** every role agent and standalone command workflow also
+  gets a companion `SKILL.md` in `~/.gemini/config/skills/` (alongside
   `~/.gemini/config/rules/workflow-policy.md`, `~/.gemini/config/agents/*/agent.md`,
   `~/.gemini/config/THIRD-PARTY-NOTICE.txt`, and `~/.gemini/config/mcp_config.json`).
 
@@ -60,15 +60,19 @@ OpenCode; `~/.gemini/config/rules/workflow-policy.md` in Antigravity):
 
 ---
 
-### 1. Planning, Plain-English Alignment & Issue Authoring
+### 1. Planning, Alignment & Multi-Tracker Issue Authoring
 
-Used in **Step 2** when scoping ideas, structuring two-layer issues (plain
-English at the top for humans + grounded codebase context at the bottom for AI),
-and aligning on architecture before writing code.
+Used in **Step 2** (and Herdr planning) when scoping ideas, structuring
+two-layer issues (Plain English at the top for humans, grounded codebase context
+at the bottom for AI), and working across GitHub Issues, Jira tickets, or local
+Markdown issues.
 
 <div class="bp-skill-list">
 {{< starter-drawer path="skills/planner/SKILL.md" meta="/plan | planner subagent" >}}
 {{< starter-drawer path="skills/create-issue/SKILL.md" meta="/create-issue | human + AI sections" >}}
+{{< starter-drawer path="skills/github-issues/SKILL.md" meta="gh issue CLI" >}}
+{{< starter-drawer path="skills/jira-issues/SKILL.md" meta="Jira / Atlassian MCP" >}}
+{{< starter-drawer path="skills/local-issues/SKILL.md" meta="temp/issues/*.md" >}}
 {{< starter-drawer path="skills/stepwise-interview/SKILL.md" meta="/interview" >}}
 {{< starter-drawer path="skills/wait-what/SKILL.md" meta="/wait-what" >}}
 {{< starter-drawer path="skills/grilling/SKILL.md" >}}
@@ -95,7 +99,7 @@ existing code from regressions, and diagnose Go concurrency or performance bugs.
 
 ### 3. Pre-PR Self-Review & Bounded GitHub PR Loop
 
-Used in **Steps 4--5** so the AI audits its own branch locally before pushing
+Used in **Steps 4 and 5** so the AI audits its own branch locally before pushing
 and drives GitHub Actions CI + GitHub Copilot reviews without burning quota.
 
 <div class="bp-skill-list">
@@ -123,7 +127,7 @@ or scrubbing private details before publishing to a public repo.
 ### 5. Parallel Multi-Issue Orchestration with Herdr
 
 Used in the **[Advanced Herdr Workflow](/docs/advanced/parallel-agents-with-herdr.md)**
-to coordinate 3--4 parallel issues in isolated worktrees under one main repo
+to coordinate 3 to 4 parallel issues in isolated worktrees under one main repo
 window.
 
 <div class="bp-skill-list">

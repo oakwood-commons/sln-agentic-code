@@ -9,14 +9,14 @@ goal: "Put a fakeable clock seam in place, then build link expiration and click 
 
 ## What Usually Goes Wrong
 
-An AI model on its own is probabilistic -- it predicts code that *looks* right,
+An AI model on its own is probabilistic: it predicts code that *looks* right,
 not code that is guaranteed to work. Left on autopilot without real feedback
 tools, AI coding models make two classic mistakes in Go:
 
-1. **They write everything in one giant batch** -- 200 lines of handler code and
+1. **They write everything in one giant batch:** 200 lines of handler code and
    10 tests at once. When tests pass on the first try, you never saw them fail,
    so you do not know if they actually test anything.
-2. **They hardcode `time.Now()` inside business logic** -- forcing expiration
+2. **They hardcode `time.Now()` inside business logic,** forcing expiration
    tests to call `time.Sleep(2 * time.Second)`, which makes test suites slow and
    flaky.
 
@@ -24,16 +24,16 @@ tools, AI coding models make two classic mistakes in Go:
 
 Pair the AI with **good tests** and **[deterministic](/docs/reference/glossary.md#deterministic)
 developer tools** (`go test -race`, `golangci-lint`, `gosec`). In an AI workflow,
-good tests -- ones that check real observable behavior at public interfaces
-rather than fragile private internals -- do **two essential jobs at once**:
+good tests (checking real observable behavior at public interfaces rather than
+fragile private internals) do **two essential jobs at once**:
 
 1. **They help the AI write better new code:** Writing one failing test at the
    HTTP boundary first forces clean interfaces and gives the AI an unmistakable
    pass/fail target to iterate against instead of guessing.
 2. **They give you confidence AI won't break existing code:** Every time the AI
-   edits `shortener.go`, the *entire* existing suite runs alongside the new test
-   -- proving non-expiring links, validation errors, and `404` responses still
-   work untouched. Today's new tests become tomorrow's safety net for the next
+   edits `shortener.go`, the *entire* existing suite runs alongside the new test,
+   proving non-expiring links, validation errors, and `404` responses still work
+   untouched. Today's new tests become tomorrow's safety net for the next
    feature.
 
 The starter `tdd` and `codebase-design`
@@ -82,22 +82,22 @@ trustworthy through two simple rules:
 
 1. **Part 1: Add expiring links (`410 Gone`)**
 
-    Tell OpenCode in plain English to implement **expiring links first** from
-    the plan, test-first:
+    Tell your harness in plain English to implement **expiring links first**
+    from the plan, test-first:
 
     ~~~text
     Let's implement expiring links first from the plan, writing the failing httptest before the code.
     ~~~
 
-    **What you should see:** OpenCode's inner monologue loads the `go`,
-    `codebase-design`, and `tdd` skills from your prose, writes the failing test
-    in `shortener_test.go` first, runs `go test` to confirm it fails (`got 302,
-    want 410` or compile error on the new option), adds `ErrExpired` and the
-    clock function, and re-runs `go test -race ./...` until green.
+    **What you should see:** The AI loads the `go`, `codebase-design`, and `tdd`
+    skills from your prose, writes the failing test in `shortener_test.go`
+    first, runs `go test` to confirm it fails (`got 302, want 410` or compile
+    error on the new option), adds `ErrExpired` and the clock function, and
+    re-runs `go test -race ./...` until green.
 
 2. **Part 2: Add the thread-safe click counter (`GET /links/{code}/stats`)**
 
-    Now ask for the click counter -- including a concurrent test so Go's race
+    Now ask for the click counter, including a concurrent test so Go's race
     detector proves click counting is safe under parallel traffic:
 
     ~~~text
@@ -120,15 +120,15 @@ trustworthy through two simple rules:
     **What you should see:** Every stage (`fmt-check`, `vet`, `lint`, `gosec`,
     `test`, `build`) finishes green in a few seconds.
 
-    You can also verify behavior in words without opening an editor -- ask
-    OpenCode directly:
+    You can also verify behavior in words without opening an editor by asking
+    your harness directly:
 
     ~~~text
     Start shorty briefly, create a link with expires_in=2, show me a working redirect and /stats count, then wait 2 seconds and confirm GET /{code} returns 410 Gone while /stats still reports clicks=1 and expired=true.
     ~~~
 
     Between deterministic CI checks and watching the live binary respond as
-    expected, you know *what* you got matches *what* you asked for -- before
+    expected, you know *what* you got matches *what* you asked for before
     reading a single line of Go yourself.
 
 {{< /steps >}}
@@ -152,11 +152,11 @@ compiler error. Two built-in safety nets prevent runaway token burn:
    [Recommended Optional Plugins](/docs/reference/customize-and-credits.md#recommended-plugins).)*
 
 > [!NOTE]
-> **Just reading along without OpenCode open?** You can inspect the starter code
-> in [`examples/go-app/`](https://github.com/oakwood-commons/sln-agentic-code/tree/main/examples/go-app)
+> **Just reading along?** You can inspect the starter code in
+> [`examples/go-app/`](https://github.com/oakwood-commons/sln-agentic-code/tree/main/examples/go-app)
 > anytime, and see how the same `scafctl` Go CI file runs in GitHub Actions and
 > Tekton in [Portable Go CI & MCP Reference](/docs/reference/portable-ci-and-mcp.md).
 
-Tests pass and the live server works -- next, **Step 4** has fresh AI subagents
+Once tests pass and the live server works, **Step 4** has fresh AI subagents
 audit the branch for subtle bugs and forgotten docs *before* opening a pull
 request.

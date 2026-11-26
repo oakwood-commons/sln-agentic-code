@@ -6,31 +6,31 @@ weight: 40
 # Customize Models, Plugins, Other Tools & Credits
 
 How to adjust the starter configuration for different model providers, local
-GPUs, optional plugins, or other coding harnesses -- plus open-source credits
-for everything adapted in this repository.
+GPUs, optional plugins, or other coding harnesses, plus open-source credits for
+everything adapted in this repository.
 
 ---
 
 ## 1. The 5-Role Model Roster & Swapping Providers {#model-roster}
 
-Using your most expensive model for every file search burns budget fast -- while
+Using your most expensive model for every file search burns budget fast, while
 using a bargain model for up-front architecture burns even more budget in failed
 test retries. In practice, you only need **five model slots**, all configured in
 one file (`~/.config/opencode/opencode.jsonc`):
 
 | Slot | Where It Runs | Why It Earns Its Spot | Starter Default |
 |---|---|---|---|
-| **1. High-reasoning planner & local reviewer** | `plan`, `planner`, `code-reviewer`, `pr-reviewer`, `security-auditor` | Planning and security/diff review take 1--3 turns; catching one bad interface or false-positive boundary saves 20 turns of rewrite churn. | `anthropic/claude-opus-5-5` |
-| **2. Code-writing workhorse** | `build`, `general`, `go-tester`, `artifact-auditor`, `docs-writer`, `pr-create`, `pr-autopilot` | Coding/testing takes 15--40 tool turns; once the plan and `go test -race` are set, a mid-tier coder is 40%--80% cheaper with near-flagship Go quality. | `anthropic/claude-sonnet-5-5` *(or local `qwen3.8:27b`)* |
-| **3. Ultra-cheap utility subagents** | `explore`, `waiter`, `title`, `compaction` | Factual file search (`grep`/`glob`), bounded CI/PR polling (`waiter`), chat titles, and context pruning run in separate contexts at 3x--10x lower cost and latency. | `anthropic/claude-haiku-5-5` *(or local `qwen3.5:9b`)* |
+| **1. High-reasoning planner & local reviewer** | `plan`, `planner`, `code-reviewer`, `pr-reviewer`, `security-auditor` | Planning and security/diff review take 1 to 3 turns; catching one bad interface or false-positive boundary saves 20 turns of rewrite churn. | `anthropic/claude-opus-5-5` |
+| **2. Code-writing workhorse** | `build`, `general`, `go-tester`, `artifact-auditor`, `docs-writer`, `pr-create`, `pr-autopilot` | Coding and testing take 15 to 40 tool turns; once the plan and `go test -race` are set, a mid-tier coder is 40% to 80% cheaper with near-flagship Go quality. | `anthropic/claude-sonnet-5-5` *(or local `qwen3.8:27b`)* |
+| **3. Ultra-cheap utility subagents** | `explore`, `waiter`, `title`, `compaction` | Factual file search (`grep`/`glob`), bounded CI/PR polling (`waiter`), chat titles, and context pruning run in separate contexts at 3x to 10x lower cost and latency. | `anthropic/claude-haiku-5-5` *(or local `qwen3.5:9b`)* |
 | **4. Second model brand (loop-breaker)** | `review-buster` & 2-strike escalations | Same-vendor models share training data and **correlated blind spots**. A second model family thinks differently when a loop gets stuck. | `openai/gpt-6.2-astra` *(swap to same vendor on Day 1 if using one API account)* |
-| **5. Cold-room PR reviewer** | GitHub Copilot Code Review | Inspects only the final PR diff + `REVIEW.md` on GitHub with a separate review pipeline -- reliably catching subtle edge cases local review missed. | Repo ruleset (`review_on_push: false`) |
+| **5. Cold-room PR reviewer** | GitHub Copilot Code Review | Inspects only the final PR diff and `REVIEW.md` on GitHub with a separate review pipeline, reliably catching subtle edge cases local review missed. | Repo ruleset (`review_on_push: false`) |
 
 > [!TIP]
 > **Two cost rules most guides miss:**
 > 1. **Do not go *too* cheap on Slot 2:** A weak coding model that takes 6 failed
 >    test loops re-sends a 40k-token context window 6 times and costs *more* than
->    one clean pass on a mid-tier workhorse -- which is why the **2-strike
+>    one clean pass on a mid-tier workhorse, which is why the **2-strike
 >    escalation** rule steps up early.
 > 2. **Keep Slot 3 in isolated subagents (Prompt Cache rule):** Never manually
 >    flip models mid-conversation inside your main chat window just for one
@@ -50,7 +50,7 @@ one file (`~/.config/opencode/opencode.jsonc`):
   coding models via Ollama and want `$0` everyday coding loops while keeping
   strong cloud models on `planner`, `code-reviewer`, and `review-buster`,
   install the hybrid profile (add `-r overwrite=true` if switching an
-  already-installed `cloud` starter config -- `.bak` backups are created
+  already-installed `cloud` starter config; `.bak` backups are created
   automatically):
   ~~~shell
   scafctl run solution agentic-code -r profile=ollama-hybrid -r overwrite=true
@@ -89,7 +89,7 @@ To enable either or both, add a `"plugins"` array to `~/.config/opencode/opencod
 
 Running `scafctl run solution agentic-code` places a minimal, agnostic set of
 files into `~/.config/opencode/` (generated directly from the solution bundle
-via `scafctl run solution agentic-code --action list-files -o tree` -- browse the
+via `scafctl run solution agentic-code --action list-files -o tree`; browse the
 full text of each playbook in
 [Skills, Agents & Commands](/docs/reference/skills-and-agents.md)):
 
@@ -129,7 +129,8 @@ folder and relies on `SKILL.md` playbooks when the main agent executes roles
 inline, `-r harness=agy` uses `scafctl` CEL transforms to automatically export
 role agents and standalone commands as companion `~/.gemini/config/skills/*/SKILL.md`
 playbooks alongside `~/.gemini/config/agents/*/agent.md`,
-`~/.gemini/config/rules/workflow-policy.md`, and a non-destructive merge of
+`~/.gemini/config/rules/workflow-policy.md`,
+`~/.gemini/config/THIRD-PARTY-NOTICE.txt`, and a non-destructive merge of
 `scafctl mcp serve` into `~/.gemini/config/mcp_config.json`.
 
 Because **repo contracts** (`AGENTS.md`, `REVIEW.md`, `ci/go-ci/actions.yaml`)
@@ -140,7 +141,7 @@ other harnesses:
 |---|---|---|---|---|
 | **Repo Contract** | `AGENTS.md` + `REVIEW.md` | `AGENTS.md` + `REVIEW.md` | `AGENTS.md` (or pointer in `CLAUDE.md`) + `REVIEW.md` | `AGENTS.md` + `.github/copilot-instructions.md` -> `REVIEW.md` |
 | **Standing Rules** | `~/.config/opencode/instructions/workflow-policy.md` | `~/.gemini/config/rules/workflow-policy.md` | `~/.claude/CLAUDE.md` | User rules / `.cursor/rules/*.mdc` |
-| **Personal Skills** | `~/.config/opencode/skills/*/SKILL.md` (22 domain skills) | `~/.gemini/config/skills/*/SKILL.md` (22 domain + 14 agent/command companion skills) | `~/.claude/skills/*/SKILL.md` | `.cursor/rules/*.mdc` or `.github/skills/*/SKILL.md` |
+| **Personal Skills** | `~/.config/opencode/skills/*/SKILL.md` (25 domain skills) | `~/.gemini/config/skills/*/SKILL.md` (25 domain + 14 agent/command companion skills) | `~/.claude/skills/*/SKILL.md` | `.cursor/rules/*.mdc` or `.github/skills/*/SKILL.md` |
 | **Isolated Subagents** | `~/.config/opencode/agents/*.md` | `~/.gemini/config/agents/*/agent.md` (`invoke_subagent`, `Model: "inherit"`) | `.claude/agents/*.md` (`Task` tool) | Background / review agent modes |
 | **Slash Commands** | `~/.config/opencode/commands/*.md` | Built-in (`/plan`, `/boost`, `/swarm`) + companion skills | `~/.claude/commands/*.md` | `.github/prompts/*.prompt.md` |
 | **`scafctl` MCP** | `opencode.jsonc` (`mcp.servers.scafctl`) | `~/.gemini/config/mcp_config.json` (`mcpServers.scafctl`) | `claude_desktop_config.json` / `.mcp.json` | `.vscode/mcp.json` / `.cursor/mcp.json` |
@@ -159,12 +160,12 @@ This repository is licensed under
 with third-party MIT license texts for adapted skills preserved in
 [`THIRD-PARTY-NOTICE.txt`](https://github.com/oakwood-commons/sln-agentic-code/blob/main/THIRD-PARTY-NOTICE.txt).
 
-- **[Matt Pocock -- `mattpocock/skills`](https://github.com/mattpocock/skills)**
+- **[Matt Pocock: `mattpocock/skills`](https://github.com/mattpocock/skills)**
   *(MIT License)*: Upstream source and inspiration adapted for `wait-what`,
   `grilling` (which inspired the companion one-question-at-a-time
   `stepwise-interview` skill), `codebase-design`, `tdd`, `diagnosing-bugs`, and
   `/handoff`.
-- **[Samuel Berthe -- `samber/cc-skills-golang`](https://github.com/samber/cc-skills-golang)**
+- **[Samuel Berthe: `samber/cc-skills-golang`](https://github.com/samber/cc-skills-golang)**
   *(MIT License)*: Upstream Go debugging and performance notes adapted in
   `go-debug` and `go-perf`.
 - **[`oakwood-commons/scafctl`](https://github.com/oakwood-commons/scafctl)**

@@ -133,12 +133,13 @@ kubectl apply -f ci/tekton/go-ci-pipeline.yaml
 
 ## 2. Wiring `scafctl mcp serve` for AI Authoring
 
-When AI agents write YAML from memory, people say they "hallucinate" fields --
+When AI agents write YAML from memory, people say they "hallucinate" fields,
 when really they just lack schema [context](/docs/reference/glossary.md#context)
 and a [deterministic](/docs/reference/glossary.md#deterministic) validator to
 test their drafts against. `scafctl` solves both with its built-in Model Context
 Protocol ([MCP](/docs/reference/glossary.md#mcp)) server (`scafctl mcp serve`),
-already enabled in `scafctl/user-opencode/opencode.*.jsonc`:
+already enabled in both OpenCode (`opencode.jsonc`) and Antigravity
+(`mcp_config.json`):
 
 ~~~json
 {
@@ -171,9 +172,9 @@ already enabled in `scafctl/user-opencode/opencode.*.jsonc`:
 
 ## 3. Connecting Jira User Stories via MCP {#jira-mcp}
 
-If your team tracks work in **Jira** rather than GitHub Issues, connect
-Atlassian's official OAuth 2.1 MCP server alongside `scafctl` in
-`~/.config/opencode/opencode.jsonc`:
+If your team tracks work in **Jira**, connect Atlassian's official OAuth 2.1 MCP
+server alongside `scafctl` in `~/.config/opencode/opencode.jsonc` (or
+`~/.gemini/config/mcp_config.json` for `agy`):
 
 ~~~jsonc
 {
@@ -193,11 +194,11 @@ Atlassian's official OAuth 2.1 MCP server alongside `scafctl` in
 ~~~
 
 Once authenticated via your browser (`opencode mcp auth atlassian` if not
-prompted automatically), the `planner` and `git-github-workflow` skills work
-with Jira stories in plain English just like GitHub or local issues:
-- **Drafting a story:** *"Let's create a Jira story in PROJ for optional
+prompted automatically), the `create-issue`, `jira-issues`, `planner`, and
+`work-herd` skills work with Jira tickets in plain English:
+- **Creating a Jira ticket:** *"Create a Jira ticket in PROJ for optional
   expiring promo links..."*
 - **Skeptical triage & planning:** *"Have a look at PROJ-123 and come up with a
-  detailed plan to implement it."* (`planner` fetches `PROJ-123` over MCP,
-  verifies every claim against live `file:line` code, and pairs naturally with
-  `<type>/PROJ-123-<slug>` branches.)
+  detailed plan to implement it."*
+- **Parallel Herdr sprint planning:** *"Look at my open Jira tickets in PROJ for
+  the current sprint and come up with a Herdr plan."*

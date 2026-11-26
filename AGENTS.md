@@ -91,8 +91,10 @@ scafctl run action ci -f ci/go-ci/actions.yaml -r workdir=examples/go-app
 
 - When a fenced code block contains backticks, wrap the outer fence in tildes
   (`~~~`) or 4+ backticks so inner fences never close the block early.
-- Keep prose direct, concrete, and copy-pasteable; use ASCII punctuation and
-  avoid emojis.
+- **No dash punctuation in prose:** never use em-dashes, en-dashes, or spaced
+  hyphens/double-hyphens (`" - "`, `" -- "`) between clauses. Rewrite sentences with
+  colons, commas, parentheses, semicolons, or separate sentences, and avoid
+  emojis.
 - **Public repository**: never commit secrets, tokens, private hostnames,
   personal homelab skills, or user-specific filesystem paths (e.g.,
   `/home/<user>` or `/Users/<user>`). Scratch files belong in git-ignored

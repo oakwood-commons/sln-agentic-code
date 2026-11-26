@@ -12,7 +12,7 @@ type: docs
     <div>
       <div class="bp-eyebrow"><span class="bp-dot" aria-hidden="true"></span><span>AGENTIC GO WALKTHROUGH</span></div>
       <h1 class="bp-hero-title" id="bp-hero-heading">You steer the design.<br>AI writes and proves the code.</h1>
-      <p class="bp-hero-desc">Let AI do what it is best at -- writing Go code, tests, and exhaustive local validation -- while you focus on architecture, plain-English guidance, and one final review on the Pull Request.</p>
+      <p class="bp-hero-desc">Let AI do what it is best at (writing Go code, tests, and exhaustive local validation) while you focus on architecture, plain-English guidance, and one final review on the Pull Request.</p>
       <div class="bp-cta-row">
         <a class="bp-btn-primary" href="docs/walkthrough/01-run-the-starter-app/">Start Step 01 -&gt;</a>
         <a class="bp-btn-secondary" href="docs/reference/glossary/">Open Glossary</a>
@@ -50,12 +50,12 @@ type: docs
 ## The Problem: Why "Prompt and Pray" Goes Sideways
 
 When most people try coding with an AI assistant, the first five minutes feel
-like magic -- and the next hour feels like cleaning up a mess. Three things
-cause almost all of that frustration:
+like magic, and the next hour feels like cleaning up a mess. Three things cause
+almost all of that frustration:
 
 1. **What people call "hallucination" is really missing context.** An AI does
-   not invent wrong code out of spite -- it gives the best answer it can based
-   on whatever [context](/docs/reference/glossary.md#context) is in front of it.
+   not invent wrong code out of spite. It gives the best answer it can based on
+   whatever [context](/docs/reference/glossary.md#context) is in front of it.
    The mistake people make is either assuming the AI knows unspoken context a
    human teammate would have, or telling the AI *how* to code something when it
    actually knows a cleaner design. Fix that by **combining repo context
@@ -63,7 +63,7 @@ cause almost all of that frustration:
    preferred libraries, without prescribing *how*) and **planning first** before
    writing code.
 2. **AI is probabilistic, so it needs good tests and deterministic tools.** Left
-   to itself, an AI only predicts code that *looks* plausible -- and adding a new
+   to itself, an AI only predicts code that *looks* plausible, and adding a new
    feature can quietly break existing behavior you already shipped. Pairing the
    AI with **strong behavior tests (`go test -race`) and linters (`golangci-lint`,
    `gosec`)** gives it [deterministic](/docs/reference/glossary.md#deterministic)
@@ -85,13 +85,14 @@ need a code editor open at all while building**:
 
 1. **Steer architecture & intent in words (Step 2):** Talk through what you want
    and why in plain English, make the design calls that matter, and capture the
-   agreement in an issue (GitHub Issues, Jira via MCP, or local `temp/issues/`).
-2. **Let AI write code & prove behavior (Steps 3--4):** The AI writes tests and
-   code, verifies them with deterministic CI (`go test -race`, `golangci-lint`,
-   `gosec`), and runs its own fresh multi-agent self-review (`finish-issue`)
-   before opening a PR -- pausing only when an architectural trade-off needs your
-   call.
-3. **Make the final call once -- on the Pull Request (Step 5):** Because the AI
+   agreement in a structured issue (`GitHub Issues`, `Jira` via MCP, or local
+   `temp/issues/`).
+2. **Let AI write code & prove behavior (Steps 3 and 4):** The AI writes tests
+   and code, verifies them with deterministic CI (`go test -race`,
+   `golangci-lint`, `gosec`), and runs its own fresh multi-agent self-review
+   (`finish-issue`) before opening a PR, pausing only when an architectural
+   trade-off needs your call.
+3. **Make the final call once on the Pull Request (Step 5):** Because the AI
    already validated everything it could on your branch, **the only time you
    inspect code line-by-line is once on the finished GitHub PR** before clicking
    Merge.
@@ -116,14 +117,14 @@ habits in order:
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
       <h3>2. Rely on Good Tests &amp; Deterministic CI</h3>
     </div>
-    <p>Pair the AI with strong public-behavior tests, race checks, and linters via one portable <a href="docs/reference/glossary/#scafctl"><code>scafctl</code></a> command -- helping AI write better code while proving existing features never break.</p>
+    <p>Pair the AI with strong public-behavior tests, race checks, and linters via one portable <a href="docs/reference/glossary/#scafctl"><code>scafctl</code></a> command, helping AI write better code while proving existing features never break.</p>
   </div>
   <div class="bp-card">
     <div class="bp-card-head">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
       <h3>3. Let AI Self-Review Before the PR</h3>
     </div>
-    <p>Have fresh, read-only AI subagents audit the branch for bugs and forgotten docs automatically before opening a PR -- saving CI runs, Copilot quota, and your attention.</p>
+    <p>Have fresh, read-only AI subagents audit the branch for bugs and forgotten docs automatically before opening a PR, saving CI runs, Copilot quota, and your attention.</p>
   </div>
   <div class="bp-card">
     <div class="bp-card-head">
@@ -140,8 +141,8 @@ habits in order:
 
 Inside [`examples/go-app/`](https://github.com/oakwood-commons/sln-agentic-code/tree/main/examples/go-app)
 is **`shorty`**, a tiny ~150-line Go URL shortener with two endpoints:
-- `POST /links` -- takes a long URL and returns a 6-character short code.
-- `GET /{code}` -- redirects your browser to the original URL.
+- **`POST /links`:** takes a long URL and returns a 6-character short code.
+- **`GET /{code}`:** redirects your browser to the original URL.
 
 Right now, links in `shorty` live forever and you cannot tell whether anyone
 ever clicked them. Across five short steps, you will add **optional link
@@ -152,7 +153,7 @@ expiration (`expires_in`) and a click counter (`GET /links/{code}/stats`)**:
     <span class="bp-rm-num">01</span>
     <span>
       <span class="bp-rm-title">Run the Starter App</span>
-      <span class="bp-rm-desc">Install scafctl and OpenCode, merge the starter workflow into your config, and shorten your first URL.</span>
+      <span class="bp-rm-desc">Install scafctl and your coding harness, merge the starter skills into your config, and shorten your first URL.</span>
     </span>
     <span class="bp-rm-time">~3 MIN</span>
   </a>
@@ -160,7 +161,7 @@ expiration (`expires_in`) and a click counter (`GET /links/{code}/stats`)**:
     <span class="bp-rm-num">02</span>
     <span>
       <span class="bp-rm-title">Ask &amp; Plan First</span>
-      <span class="bp-rm-desc">Speak in plain English while auto-loaded skills inspect the code, question assumptions, and plan first.</span>
+      <span class="bp-rm-desc">Speak in plain English while auto-loaded skills inspect the code, draft a two-layer issue, and plan first.</span>
     </span>
     <span class="bp-rm-time">~4 MIN</span>
   </a>
@@ -192,7 +193,7 @@ expiration (`expires_in`) and a click counter (`GET /links/{code}/stats`)**:
 
 New to `scafctl`? Grab it for Linux, macOS, or Windows via the
 **[`scafctl` Installation Guide](https://scafctl.oakwood-commons.org/docs/tutorials/getting-started/#installation)**
-before starting Step 01. Need to look up a term, set up your own repository, or
-wire Tekton/GitHub Actions CI later? Everything extra lives in the **Reference &
-Lookup** section at the bottom of the left sidebar so it stays out of your way
-while you walk through the steps.
+before starting Step 01. Need to look up a term, browse the bundled skills, set
+up your own repository, or wire Tekton/GitHub Actions CI later? Everything extra
+lives in the **Reference & Lookup** section at the bottom of the left sidebar so
+it stays out of your way while you walk through the steps.

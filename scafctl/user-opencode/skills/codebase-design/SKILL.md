@@ -7,27 +7,27 @@ description: "Shared vocabulary for designing deep modules. Use when designing o
 
 # Codebase Design
 
-Design **deep modules**: a lot of behaviour behind a small interface, placed at
-a clean seam, testable through that interface. The aim is leverage for callers,
-locality for maintainers, and testability for everyone.
+Design **deep modules**: substantial behaviour behind a small interface, placed
+at a clean seam, testable through that interface. The aim is leverage for
+callers, locality for maintainers, and testability for everyone.
 
 ## Glossary
 
-- **Module** -- anything with an interface and an implementation (a function,
+- **Module:** anything with an interface and an implementation (a function,
   struct, package, or workflow).
-- **Interface** -- everything a caller must know to use the module correctly:
+- **Interface:** everything a caller must know to use the module correctly:
   type signatures, invariants, ordering constraints, error modes, and required
   configuration.
-- **Implementation** -- the body of code inside a module that hides complexity.
-- **Depth** -- leverage at the interface: the amount of useful behaviour a
-  caller or test exercises per unit of interface they must learn.
-- **Seam** -- a place where you can alter behaviour
-  without editing in that place; the location where a module's interface lives.
-- **Adapter** -- a concrete implementation satisfying an interface at a seam
+- **Implementation:** the body of code inside a module that hides complexity.
+- **Depth:** leverage at the interface, meaning the amount of useful behaviour
+  a caller or test exercises per unit of interface they must learn.
+- **Seam:** a place where you can alter behaviour without editing in that
+  place; the location where a module's interface lives.
+- **Adapter:** a concrete implementation satisfying an interface at a seam
   (for example, a real directory reader vs. an in-memory map reader).
-- **Leverage** -- capability gained per unit of interface learned.
-- **Locality** -- changes, bugs, and verification stay concentrated in one
-  place rather than spreading across callers.
+- **Leverage:** capability gained per unit of interface learned.
+- **Locality:** changes, bugs, and verification stay concentrated in one place
+  rather than spreading across callers.
 
 ## Principles
 

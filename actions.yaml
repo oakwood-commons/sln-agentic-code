@@ -355,7 +355,7 @@ spec:
             if [ "$TARGET_OS" = "windows" ]; then
               PATH_SEP=";"
             fi
-            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+            export PATH="${TOOLS_BIN}${PATH_SEP}${TOOLS_BIN}/go-sdk/bin${PATH_SEP}${PATH}"
             if [ -f ./site/hugo.yaml ]; then
               cd site
               hugo --gc --minify
@@ -384,7 +384,7 @@ spec:
             if [ "$TARGET_OS" = "windows" ]; then
               PATH_SEP=";"
             fi
-            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+            export PATH="${TOOLS_BIN}${PATH_SEP}${TOOLS_BIN}/go-sdk/bin${PATH_SEP}${PATH}"
             TMP_TREE="$(mktemp)"
             trap 'rm -f "$TMP_TREE"' EXIT
             scafctl run resolver opencode_files -f ./scafctl/solution.yaml -o tree --no-color > "$TMP_TREE"

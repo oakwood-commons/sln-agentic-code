@@ -2,28 +2,26 @@
 
 - **Repo contract vs. personal workflow**: Always read the target repository's
   `AGENTS.md` and `REVIEW.md` first for repo-specific build, test, lint,
-  architecture, and **issue-tracking** rules (`github`, `jira`, `local`
-  `temp/issues/`, or a combination). Never make the user repeat where issues
-  live in every prompt -- if a repo has not declared an issue mechanism yet, ask
-  once and offer to record it in `AGENTS.md`.
-- **Auto-select skills from plain-English prose**: Users should not have to
-  memorize slash commands or repeat boilerplate instructions. Match their
-  natural prose to your installed skills automatically:
-  - Load `planner` before starting any non-trivial feature, refactor, issue
-    draft, or issue pickup -- inspect the codebase first, skeptically verify it
-    is worth doing, and align on a plan before writing code.
-  - Load `create-issue` when drafting or filing issues/stories so every issue
-    has a plain-English top half for human sign-off and grounded repo context at
-    the bottom for AI implementation (shown in chat before filing).
+  architecture, and default issue-tracker conventions.
+- **Auto-select skills from plain-English prose**: Match natural prose to your
+  installed skills automatically without requiring memorized slash commands:
+  - Load `planner` before starting any non-trivial feature, refactor, or issue
+    pickup: inspect the codebase first, skeptically verify it fits project
+    scope, and align on a plan before writing code.
+  - Load `create-issue` alongside `github-issues`, `jira-issues`, or
+    `local-issues` when drafting or reading issues so every issue has a
+    plain-English top half for human sign-off and grounded repo context at the
+    bottom for AI implementation (previewed in chat before filing).
   - Load `stepwise-interview` when product edge cases are open, and `wait-what`
     whenever the user says `"what?"` or `"I don't follow"`.
   - Load `tdd` and `codebase-design` (plus `go` in Go repos) when implementing
-    incremental steps, `security-audit` (or `security-sweep` for whole-repo
-    audits) when investigating or fixing security flaws, `publish-hygiene`
-    before publishing to public repos, `finish-issue` automatically before
-    opening a pull request, `pr-autopilot` when driving an open PR through CI
-    and Copilot reviews, and `work-herd` when asked for a Herdr plan/DAG or
-    multi-worker wave.
+    incremental steps, `markdown` when authoring Markdown or prose (never use
+    em-dashes, en-dashes, or `--` dash clauses), `security-audit` (or
+    `security-sweep` for whole-repo audits) when investigating or fixing
+    security flaws, `publish-hygiene` before publishing to public repos,
+    `finish-issue` automatically before opening a pull request, `pr-autopilot`
+    when driving an open PR through CI and Copilot reviews, and `work-herd` when
+    asked for a Herdr plan/DAG or multi-worker wave.
 - **Engineering judgment (best over easiest, never rubber-stamp *how*)**:
   - Honor libraries, stack choices, and constraints the user already stated
     without grilling them backwards on settled basics.
@@ -43,13 +41,13 @@
     secret-redacted summary of scope, files, attempts, and exact error output)
     instead of spinning in a retry loop.
   - After **3 failed fix attempts** (locally or in PR review rounds), **STOP**
-    patching and ask the human -- repeated failure signals a design or boundary
-    problem, not a line-level typo.
+    patching and ask the human, because repeated failure signals a design or
+    boundary problem rather than a typo.
 - **Pre-PR AI self-review gate (0 CI / 0 PR quota)**: Automatically run
   `finish-issue` (`code-reviewer` + `artifact-auditor` in parallel, plus free
-  local tests/linters/security scan) on your feature branch before pushing and
-  opening a pull request so Round 1 reaches GitHub Copilot and human PR review
-  clean.
+  local tests, linters, and security scan) on your feature branch before pushing
+  and opening a pull request so Round 1 reaches GitHub Copilot and human PR
+  review clean.
 - **Protect GitHub Copilot review credits**:
   - Never request a Copilot re-review until **all GitHub CI checks on `HEAD`
     are green**.
@@ -60,5 +58,5 @@
 - **Human-in-the-loop boundaries**: Never commit directly to `main`/`master`;
   work on feature branches, require human approval before pushing to remotes,
   opening PRs, or cutting releases, and **never merge pull requests (`gh pr
-  merge`)** automatically -- the human owns architecture, guidance, and final PR
+  merge`)** automatically. The human owns architecture, guidance, and final PR
   acceptance.

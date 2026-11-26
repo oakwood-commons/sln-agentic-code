@@ -10,29 +10,29 @@ goal: "Pair your local harness with GitHub Copilot Code Review while protecting 
 ## What Usually Goes Wrong
 
 Using an independent external AI reviewer like **GitHub Copilot Code Review** on
-pull requests is a great second pair of eyes -- until three defaults bite you:
+pull requests is a great second pair of eyes until three defaults bite you:
 
 1. **Noisy style nitpicks:** Without repo instructions, Copilot leaves subjective
    `"Consider renaming..."` comments and re-audits untouched files on every push.
 2. **Surprise quota burn:** Each Copilot PR review uses premium request quota on
    your GitHub plan. If a repo enables automatic review on every `git push` and
    an agent pushes 6 WIP commits while fixing CI, **one PR burns 6 paid
-   reviews** -- mostly on broken code.
+   reviews**, mostly on broken code.
 3. **Piecemeal review loops:** Fixing one comment triggers another round that
    spots one more comment in the same file, spinning for 5+ rounds.
 
 ## What to Do Instead
 
 Even after Step 4's local review passes clean, **GitHub Copilot Code Review
-almost always spots new edge cases worth knowing about** -- because it runs a
+almost always spots new edge cases worth knowing about** because it runs a
 separate review pipeline in a true **cold-room context** (seeing only your final
-PR diff + `REVIEW.md` on GitHub, with zero shared blind spots from your local
+PR diff and `REVIEW.md` on GitHub, with zero shared blind spots from your local
 session or authoring model family; see
 [The 5-Role Model Roster](/docs/reference/customize-and-credits.md#model-roster)).
 
 Local `finish-issue` clears the noisy first ~80% of bugs and missing docs before
 spending any CI runs or PR review quota, so Copilot can spend 100% of its Round
-1 attention on the subtle remaining 20% -- paired with **repo review files**,
+1 attention on the subtle remaining 20%, paired with **repo review files**,
 **credit-saving triggers**, and **hard circuit breakers**:
 
 <div class="bp-flow" role="region" aria-label="Bounded GitHub PR and Copilot review workflow">
@@ -83,10 +83,10 @@ spending any CI runs or PR review quota, so Copilot can spend 100% of its Round
 ### 1. Give Copilot a Repo Rulebook (`REVIEW.md`)
 
 Check two files at the root of this repository:
-- **[`.github/copilot-instructions.md`](https://github.com/oakwood-commons/sln-agentic-code/blob/main/.github/copilot-instructions.md)** --
+- **[`.github/copilot-instructions.md`](https://github.com/oakwood-commons/sln-agentic-code/blob/main/.github/copilot-instructions.md):**
   GitHub Copilot reads this file automatically and follows its pointer straight
   to `REVIEW.md`.
-- **[`REVIEW.md`](https://github.com/oakwood-commons/sln-agentic-code/blob/main/REVIEW.md)** --
+- **[`REVIEW.md`](https://github.com/oakwood-commons/sln-agentic-code/blob/main/REVIEW.md):**
   Tells Copilot to skip style nits already handled by `gofmt`/`golangci-lint`,
   check callers outside the diff, report an entire class of bug at once, and
   **on re-reviews, inspect only what changed since its last review
@@ -120,9 +120,9 @@ enforce four non-negotiable stops:
 | Safeguard | Rule |
 |---|---|
 | **Design trade-offs** | If a review comment questions an API shape, flag name, or behavior choice with two reasonable answers, **stop immediately and ask the human**. |
-| **3-round circuit breaker** | Cap PR fix loops at **3 rounds maximum**. If Round 3 still raises new comments, stop -- or run `/review-buster`, which reads the *entire* review history with a different model family, diagnoses the shared root cause, and waits for your approval on one comprehensive plan. |
+| **3-round circuit breaker** | Cap PR fix loops at **3 rounds maximum**. If Round 3 still raises new comments, stop or run `/review-buster`, which reads the *entire* review history with a different model family, diagnoses the shared root cause, and waits for your approval on one comprehensive plan. |
 | **Quota-error check** | Never treat a Copilot comment saying `"unable to review"` or `"insufficient remaining quota"` as a clean pass. |
-| **Human owns Merge (your one code review)** | `gh pr merge` is set to `"deny"` in `opencode.jsonc`. Because words, deterministic tests, live smoke runs, and `finish-issue` already did the heavy lifting in your terminal, **PR time is the one place you sit down to read the finished diff**, weigh Copilot's comments, and click **Merge** -- no code editor required. |
+| **Human owns Merge (your one code review)** | `gh pr merge` is set to `"deny"` in `opencode.jsonc`. Because words, deterministic tests, live smoke runs, and `finish-issue` already did the heavy lifting in your terminal, **PR time is the one place you sit down to read the finished diff**, weigh Copilot's comments, and click **Merge** without needing a code editor. |
 
 ---
 

@@ -2,21 +2,21 @@
 title: "4. Let AI Self-Review Before the PR"
 weight: 40
 duration: "~4 MIN HANDS-ON"
-goal: "Have fresh AI reviewers catch subtle bugs and missing docs on your branch automatically -- so you only inspect code once on the PR."
+goal: "Have fresh AI reviewers catch subtle bugs and missing docs on your branch automatically so you only inspect code once on the PR."
 ---
 
 # Step 4: Let AI Self-Review Before the PR
 
 ## What Usually Goes Wrong
 
-Committing to a feature branch is harmless -- you do **not** want to sit in an
+Committing to a feature branch is harmless, and you do **not** want to sit in an
 editor manually reviewing code before every branch commit. What wastes everyone's
 time is having the AI open a pull request the instant `go test` turns green:
 
 1. **Self-review blindness:** If the *same* AI chat that just wrote the code
    checks its own work, its conversation history is already primed to defend the
    choices it just made.
-2. **Forgotten supporting files:** Tests pass on the Go code -- and then GitHub
+2. **Forgotten supporting files:** Tests pass on the Go code, and then GitHub
    Copilot (or you, during PR review) has to point out that `expires_in` and
    `GET /links/{code}/stats` were never documented in `examples/go-app/README.md`,
    costing an avoidable CI and review round.
@@ -26,8 +26,8 @@ time is having the AI open a pull request the instant `go test` turns green:
 Validating everything it possibly can before asking for your final review is **an
 AI job, not yours**.
 
-Your standing `workflow-policy.md` instructs OpenCode to automatically run the
-**`finish-issue` pre-PR gate** whenever it wraps up an issue to open a pull
+Your standing `workflow-policy.md` instructs your harness to automatically run
+the **`finish-issue` pre-PR gate** whenever it wraps up an issue to open a pull
 request (and you can also trigger it anytime in plain English or via
 `/finish-issue`). It runs static security checks (`gosec`), then dispatches **two
 fresh, read-only [subagents](/docs/reference/glossary.md#subagent) in parallel**
@@ -56,12 +56,12 @@ over the branch diff:
   <div class="bp-flow-node is-center is-mint">
     <span class="bp-flow-step">03 // READY FOR PR</span>
     <span class="bp-flow-title">One Combined Fix Pass + Final CI</span>
-    <span class="bp-flow-desc">Pauses only if an architectural trade-off needs your call -- saving CI runs, Copilot quota, and your review time.</span>
+    <span class="bp-flow-desc">Pauses only if an architectural trade-off needs your call, saving CI runs, Copilot quota, and your review time.</span>
   </div>
 </div>
 
-Because neither subagent wrote the code -- and both are read-only (`edit: deny`)
--- the AI catches its own blind spots before pushing. You still have not opened a
+Because neither subagent wrote the code and both are read-only (`edit: deny`),
+the AI catches its own blind spots before pushing. You still have not opened a
 code editor or read a line of Go locally; the AI only interrupts you here if one
 of its reviewers surfaces a genuine **design or API decision** that belongs to a
 human.
@@ -74,16 +74,16 @@ human.
 
 1. **Watch the AI audit its own work (`finish-issue`)**
 
-    On your own repo or fork, simply telling OpenCode *"wrap this up on a
-    feature branch and open a PR"* runs `finish-issue` automatically before
-    pushing. Because this walkthrough practices locally on `shorty` without
-    opening a PR yet, trigger that pre-PR self-review directly:
+    On your own repo or fork, telling your harness *"wrap this up on a feature
+    branch and open a PR"* runs `finish-issue` automatically before pushing.
+    Because this walkthrough practices locally on `shorty` without opening a PR
+    yet, trigger that pre-PR self-review directly:
 
     ~~~text
     Run the pre-PR finish-issue check on the shorty changes and fix anything mechanical.
     ~~~
 
-    **What you should see:** OpenCode runs Go build/test/`gosec` checks,
+    **What you should see:** The AI runs Go build/test/`gosec` checks,
     dispatches `code-reviewer` and `artifact-auditor` in parallel, and merges
     their findings into one list:
     - **`artifact-auditor`** flags `examples/go-app/README.md` as **Missing
@@ -96,17 +96,17 @@ human.
 
 2. **Let the AI fix confirmed gaps & verify full CI**
 
-    OpenCode fixes the mechanical findings and missing `README.md` docs in **one
-    pass** (pausing only if something requires a real product/API decision from
-    you) and re-runs the repository verification suite:
+    The AI fixes the mechanical findings and missing `README.md` docs in **one
+    pass** (pausing only if something requires a real product or API decision
+    from you) and re-runs the repository verification suite:
 
     ~~~shell
     scafctl run action ci
     ~~~
 
     **What you should see:** Go CI, `scafctl` solution tests, and the docs build
-    all finish green -- with both implementation *and* docs ready for a clean
-    pull request.
+    all finish green, with both implementation *and* docs ready for a clean pull
+    request.
 
 {{< /steps >}}
 

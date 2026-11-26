@@ -8,8 +8,8 @@ weight: 20
 Once you have tried the walkthrough on `shorty`, you can set up any of your own
 Go repositories with the exact same repo contracts, portable Go CI, and GitHub
 settings using the published `agentic-code`
-[`scafctl`](/docs/reference/glossary.md#scafctl) solution -- **no repository
-clone required**.
+[`scafctl`](/docs/reference/glossary.md#scafctl) solution (no repository clone
+required).
 
 ---
 
@@ -60,15 +60,14 @@ scafctl run solution agentic-code --action init-repo `
 `-f ./scafctl/solution.yaml`.)*
 
 What gets added to `/path/to/your-service`:
-- **`AGENTS.md`** -- build, test, lint, Go conventions, and your declared
-  **issue mechanism** (`-r issue_tracker=github` default, or `jira`, `local`,
-  `jira+github`, `github+local` with `-r jira_project=PROJ`) so you can simply
-  say *"create an issue"* without repeating tracker details in prompts.
-- **`REVIEW.md`** -- single-pass PR review contract (focusing on bugs, callers,
-  races, and `<last_reviewed_commit>..HEAD` delta re-reviews).
-- **`.github/copilot-instructions.md`** -- points GitHub Copilot at `AGENTS.md`
+- **`AGENTS.md`:** build, test, lint, Go conventions, and your repository's
+  default issue tracker (`-r issue_tracker=github` default, or `jira`, `local`,
+  `jira+github`, `github+local` with `-r jira_project=PROJ`).
+- **`REVIEW.md`:** single-pass PR review contract focusing on bugs, callers,
+  races, and `<last_reviewed_commit>..HEAD` delta re-reviews.
+- **`.github/copilot-instructions.md`:** points GitHub Copilot at `AGENTS.md`
   and `REVIEW.md` without duplicating rules.
-- **`ci/go-ci/actions.yaml`** -- portable Go CI workflow (pass `-r
+- **`ci/go-ci/actions.yaml`:** portable Go CI workflow (pass `-r
   include_go_ci=false` if your repo already has its own CI actions file).
 
 ---
@@ -91,7 +90,7 @@ scafctl run solution agentic-code --action configure-github \
   -r repo=your-service \
   --dry-run
 
-# Apply idempotently (safe to re-run anytime -- updates existing rulesets in place)
+# Apply idempotently (safe to re-run anytime; updates existing rulesets in place)
 scafctl run solution agentic-code --action configure-github \
   -r owner=your-org \
   -r repo=your-service
@@ -106,7 +105,7 @@ scafctl run solution agentic-code --action configure-github `
   -r repo=your-service `
   --dry-run
 
-# Apply idempotently (safe to re-run anytime -- updates existing rulesets in place)
+# Apply idempotently (safe to re-run anytime; updates existing rulesets in place)
 scafctl run solution agentic-code --action configure-github `
   -r owner=your-org `
   -r repo=your-service

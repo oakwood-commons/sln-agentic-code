@@ -63,7 +63,7 @@ scafctl run action ci -f ./ci/go-ci/actions.yaml
 go test -race ./...
 ~~~
 
-## Go Conventions
+## Go & Markdown Conventions
 
 - Wrap errors with context and `%w` (`fmt.Errorf("...: %w", err)`), preserve
   `errors.Is` / `errors.As`, and never panic in library packages.
@@ -71,6 +71,9 @@ go test -race ./...
   exercising public interfaces rather than private internals.
 - Close opened files, network bodies, and goroutines cleanly; respect
   `context.Context` cancellation.
+- In Markdown and prose, wrap outer code fences in tildes (`~~~`) when inner
+  content contains backticks, avoid emojis, and never use em-dashes, en-dashes,
+  or spaced hyphens/double-hyphens (`" - "`, `" -- "`) as sentence punctuation.
 - Keep scratch notes and local draft issues inside git-ignored `temp/` (`temp/issues/`).
 - Never commit secrets, credentials, or user-specific home paths (such as
   `/home/<user>/` or `/Users/<user>/`).

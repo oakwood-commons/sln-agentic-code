@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: "Use automatically when implementing a feature or fixing a bug -- writes one failing test at a public seam first, makes it pass, and refactors (Red -> Green -> Refactor)."
+description: "Use automatically when implementing a feature or fixing a bug: writes one failing test at a public seam first, makes it pass, and refactors (Red -> Green -> Refactor)."
 ---
 
 <!-- Adapted from mattpocock/skills (MIT License): https://github.com/mattpocock/skills -->
@@ -19,11 +19,11 @@ before writing tests.
 
 ## Three Anti-Patterns to Avoid
 
-1. **Implementation-coupled** -- mocking private helpers or asserting internal
+1. **Implementation-coupled:** mocking private helpers or asserting internal
    fields so tests break on harmless refactors.
-2. **Tautological** -- recomputing the expected value using the exact formula
+2. **Tautological:** recomputing the expected value using the exact formula
    under test instead of asserting against an independent literal or spec.
-3. **All-tests-up-front batching** -- writing 20 speculative tests up front and
+3. **All-tests-up-front batching:** writing 20 speculative tests up front and
    then all the code. Work **one behavior at a time** instead: one failing test
    -> minimal implementation -> green suite -> refactor -> repeat.
 

@@ -5,7 +5,7 @@ description: "Batch-frontier structured interview for resolving multiple indepen
 
 <!-- Adapted from mattpocock/skills (MIT License): https://github.com/mattpocock/skills -->
 
-# Grilling -- structured interview via frontier of rounds
+# Grilling: Structured Interview via Frontier of Rounds
 
 Map open design questions as a **design tree**: every decision branches into
 the decisions that depend on it.
@@ -15,7 +15,7 @@ the decisions that depend on it.
 > Use `grilling` when you and the user want to clear all independent frontier
 > questions in a single numbered batch.
 
-## Honor stated context & challenge suboptimal "how"
+## Honor stated context & challenge weak "how"
 
 1. **Never grill backwards**: Treat libraries, constraints, and goals the user
    already stated in their prompt as settled. Only put genuinely unresolved
@@ -35,7 +35,7 @@ Ask the current frontier with a recommended answer (`->`) on each item, then
 wait for the user's answers before computing the next round:
 
 ~~~text
-Q1 -- <question title>: <question body>
+Q1: <question title>: <question body>
 
 -> <your recommended answer grounded in best practice>
 ~~~

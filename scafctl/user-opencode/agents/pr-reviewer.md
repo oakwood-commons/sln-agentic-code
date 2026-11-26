@@ -15,7 +15,7 @@ Copilot credit-protection rules.
    the PR number via argument or `gh pr view`.
 2. **Read all 4 feedback surfaces + diff**:
    - Inline review threads via GraphQL (`isResolved`, `isOutdated`, thread IDs)
-   - Review bodies (`gh api .../reviews` -- including collapsed `<details>` blocks
+   - Review bodies (`gh api .../reviews`, including collapsed `<details>` blocks
      and checking for Copilot quota errors like `"unable to review"`)
    - General PR issue comments (`gh api .../issues/<N>/comments`)
    - CI check runs (`gh pr checks`)

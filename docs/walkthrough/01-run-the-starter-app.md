@@ -2,7 +2,7 @@
 title: "1. Run the Starter App"
 weight: 10
 duration: "~3 MIN HANDS-ON"
-goal: "Install the local tools, load the starter commands into OpenCode, and watch the starter URL shortener run before changing a single line."
+goal: "Install the local tools, load the starter skills into your coding harness, and watch the starter URL shortener run before changing a single line."
 ---
 
 # Step 1: Run the Starter App
@@ -18,16 +18,17 @@ the shared Git repo, forcing every teammate to work the exact same way.
 First, get the sample Go app running in two commands so you know everything
 works. Second, keep two kinds of AI files cleanly separated:
 
-- **[Repo Contract](/docs/reference/glossary.md#repo-contract) (`AGENTS.md`, `REVIEW.md`)** --
+- **[Repo Contract](/docs/reference/glossary.md#repo-contract) (`AGENTS.md`, `REVIEW.md`):**
   lives inside the Git repository and states *what* the project requires (test
   commands, coverage, Go rules) without forcing how anyone works.
-- **Personal AI Workflow (`~/.config/opencode/`)** -- lives in your home folder
-  and holds *how* you like to work with your [harness](/docs/reference/glossary.md#harness)
-  ([OpenCode](https://opencode.ai)).
+- **Personal AI Workflow (`~/.config/opencode/` or `~/.gemini/config/`):**
+  lives in your home folder and holds *how* you like to work with your
+  [harness](/docs/reference/glossary.md#harness) ([OpenCode](https://opencode.ai)
+  or Antigravity `agy`).
 
 Both are installed safely by **[`scafctl`](/docs/reference/glossary.md#scafctl)**,
 an open-source workflow and scaffolding CLI used here to run portable project
-actions and add missing starter files without stepping on an existing OpenCode
+actions and add missing starter files without stepping on an existing
 configuration.
 
 ---
@@ -38,24 +39,25 @@ configuration.
 > **Works natively on Linux, macOS, and Windows:** Every tool in this guide runs
 > across all three operating systems. Before Step 1, install two CLIs:
 > - **[`scafctl`](/docs/reference/glossary.md#scafctl)** *(packaged for Linux,
->   macOS, and Windows on `amd64` + `arm64`)* -- follow the
+>   macOS, and Windows on `amd64` and `arm64`):* follow the
 >   **[`scafctl` Installation Guide](https://scafctl.oakwood-commons.org/docs/tutorials/getting-started/#installation)**
 >   (`brew install oakwood-commons/tap/scafctl` on macOS/Linux, or `.tar.gz` /
 >   Windows `.zip` binaries from
 >   [GitHub Releases](https://github.com/oakwood-commons/scafctl/releases)).
-> - **[OpenCode](https://opencode.ai)** *(Linux, macOS, Windows)* -- install
->   from [opencode.ai](https://opencode.ai) and run `opencode auth` once to
->   connect your cloud model provider.
-> - **Go 1.26+** -- already installed? You are set. Missing or older Go? Step 1
->   includes a one-line `scafctl` action (`--action install-go`) that installs
->   Go 1.26+ for Linux, macOS, or Windows without `sudo` or admin rights.
+> - **[OpenCode](https://opencode.ai)** *(Linux, macOS, Windows):* install from
+>   [opencode.ai](https://opencode.ai) and run `opencode auth` once to connect
+>   your cloud model provider *(or use Antigravity `agy` with `-r harness=agy`)*.
+> - **Go 1.26+:** if Go 1.26+ is already installed, you are set. If Go is
+>   missing or older, Step 1 includes a one-line `scafctl` action (`--action
+>   install-go`) that installs Go 1.26+ for Linux, macOS, or Windows without
+>   `sudo` or admin rights.
 
 {{< steps >}}
 
-1. **Initialize your OpenCode setup (and Go 1.26+ if needed) with `agentic-code`**
+1. **Initialize your harness setup (and Go 1.26+ if needed) with `agentic-code`**
 
     With `scafctl` installed on Linux, macOS, or Windows, initialize your
-    OpenCode starter files and make sure Go 1.26+ is ready:
+    starter skills and make sure Go 1.26+ is ready:
 
     ~~~shell
     # Preview without writing any files
@@ -89,15 +91,16 @@ configuration.
     >   or `-r agy_config_dir=./temp/agy-config` for `agy`) and launch OpenCode
     >   with `OPENCODE_CONFIG_DIR=$PWD/temp/opencode-config opencode`
     >   (`$env:OPENCODE_CONFIG_DIR="$PWD\temp\opencode-config"; opencode` in
-    >   PowerShell) -- OpenCode still reuses your existing `opencode auth` logins
+    >   PowerShell). OpenCode still reuses your existing `opencode auth` logins
     >   while leaving `~/.config/opencode` untouched. To refresh bundled skills
     >   after a future release, pass `-r overwrite=true` (`.bak` backups are
     >   saved automatically).
 
     **What you should see:** `agentic-code` adds the starter skills (`planner`,
-    `create-issue`, `stepwise-interview`, `tdd`, `go`, `security-audit`,
-    `finish-issue`), subagents, and commands (browse all playbooks and see how
-    prompts, rules, skills, subagents, and commands differ in
+    `create-issue`, `github-issues`, `jira-issues`, `local-issues`,
+    `stepwise-interview`, `tdd`, `go`, `security-audit`, `finish-issue`),
+    subagents, and commands (browse all playbooks and see how prompts, rules,
+    skills, subagents, and commands differ in
     [Skills, Agents & Commands](/docs/reference/skills-and-agents.md)), verifies
     `gh` CLI, and confirms Go 1.26+ is ready.
 
@@ -133,13 +136,13 @@ configuration.
 
     Notice the `87%+` test coverage already guarding `POST /links` and
     `GET /{code}`. Those existing behavior tests are why you can let AI add new
-    features in Step 3 with confidence -- every test run proves existing links
-    and error cases still work without regressions. *(Adopting this workflow on
-    an older codebase with weak test coverage? Make adding public-behavior tests
+    features in Step 3 with confidence: every test run proves existing links and
+    error cases still work without regressions. *(Adopting this workflow on an
+    older codebase with weak test coverage? Make adding public-behavior tests
     your very first AI task before building new features.)*
 
     Now start `shorty` in one terminal tab and shorten a URL from a second tab
-    (click **Bash** or **PowerShell** below if your shell differs -- your choice
+    (click **Bash** or **PowerShell** below if your shell differs; your choice
     sticks across the rest of the guide):
 
     ~~~shell
@@ -184,12 +187,12 @@ configuration.
 [`examples/go-app/internal/shortener/shortener.go`](https://github.com/oakwood-commons/sln-agentic-code/blob/main/examples/go-app/internal/shortener/shortener.go).
 Right now it has two obvious gaps:
 
-1. **Every link lives forever** -- even temporary promo or invite links.
-2. **There is no click counter** -- you cannot check whether anyone ever used
+1. **Every link lives forever**, even temporary promo or invite links.
+2. **There is no click counter**, so you cannot check whether anyone ever used
    your link.
 
-In **Step 2**, you will have OpenCode scope **optional link expiration and click
-counts** -- starting with a 2-minute conversation instead of a blind code dump.
+In **Step 2**, you will scope **optional link expiration and click counts**,
+starting with a quick plain-English conversation instead of a blind code dump.
 
 - *Using OpenAI, Gemini, Copilot, or local Ollama instead of Anthropic? See
   [Customizing Models & Plugins](/docs/reference/customize-and-credits.md).*

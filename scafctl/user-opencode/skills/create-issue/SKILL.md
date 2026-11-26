@@ -1,49 +1,47 @@
 ---
 name: create-issue
-description: "Use when drafting or filing an issue, feature request, bug report, or user story (GitHub Issues, Jira via MCP, or local temp/issues/*.md). Explores the codebase first, structures every issue into two halves -- Plain English at the top so a human can review and approve intent in 20 seconds without reading code, followed by grounded Technical Context at the bottom so an AI implementer succeeds on the first pass without brittle code prescriptions -- and shows the draft for human confirmation before filing."
+description: "Use when drafting an issue, bug report, feature request, or user story. Explores the codebase first, structures every issue with Plain English at the top for fast human review and Technical Context at the bottom for accurate AI implementation, previews the draft for approval, and delegates filing to github-issues, jira-issues, or local-issues."
 ---
 
-# Two-Layer Issue Authoring (Plain English for Humans + Context for AI)
+# Two-Layer Issue Authoring (`create-issue`)
 
-Every well-written issue serves **two different readers** in sequence:
-1. **The human decision-maker right now** -- who wants to verify *what* will be
-   built, *why*, and how edge cases behave in plain English without wading
-   through file paths or Go types.
-2. **The AI (or teammate) implementing it next** -- who starts in a fresh
-   context window and does dramatically better work when given grounded package
-   pointers, existing patterns, and test expectations up front.
+Every well-written issue serves two different readers in sequence:
+1. **The human decision-maker right now**, who wants to verify what will be
+   built, why it matters, and how edge cases behave in plain English without
+   wading through file paths or Go types.
+2. **The AI (or teammate) implementing it next**, who starts in a fresh context
+   window and produces much stronger code when given grounded package pointers,
+   existing patterns, and test expectations up front.
 
-Never implement code while running this skill. Explore, align, draft, and file
-only after the human approves.
+Never write implementation code while running this skill. Explore, align,
+preview the draft, and file only after the human confirms.
 
-## 1. Explore & Settle Open Product Questions First
+## 1. Explore & Clarify Before Drafting
 
-1. **Read repo rules first:** Check `AGENTS.md` and `README.md` to see the
-   project's scope, conventions, and configured issue tracker (`github`, `jira`,
-   `local` `temp/issues/`, or a combination).
-2. **Verify against real code (`path/to/file`):** Inspect the relevant packages
-   and tests to confirm the feature gap or bug actually exists and see what
-   interfaces, patterns, and test helpers already exist.
-3. **Clarify unspoken product rules simply:** Do not guess user-facing behavior.
-   If 1--3 product or edge-case choices are genuinely open (status codes,
+1. **Inspect real code first:** Read `AGENTS.md`, `README.md`, and the relevant
+   packages and tests (`path/to/file`) to confirm the gap or bug exists and note
+   existing interfaces, error conventions, and test helpers.
+2. **Clarify open product rules simply:** Do not guess user-facing behavior.
+   When 1 to 3 product or edge-case choices are genuinely open (status codes,
    defaults, error handling, non-goals), load `stepwise-interview` and settle
    them one plain-English question at a time with a recommended default.
 
-## 2. Draft Using the Two-Half Structure
+## 2. Draft With the Two-Half Template
 
-Keep the **top half** jargon-free for fast human sign-off, and put **repo
-grounding** in the bottom half without prescribing brittle line-by-line code:
+Keep the top half jargon-free for a 20-second human review, and place grounded
+codebase context in the bottom half without locking implementers into brittle
+line-by-line code:
 
 ~~~markdown
-# <Clear action title -- e.g. feat(shortener): optional link expiration and click stats>
+# <Clear action title, e.g. feat(shortener): optional link expiration and click stats>
 
 ## Summary & Why
-<2--4 plain-English sentences stating the problem or use case, who it helps, and why it matters.>
+<2 to 4 plain-English sentences stating the problem or use case, who benefits, and why it matters.>
 
 ## Agreed Behavior & Edge Cases
-- <Plain-English rule 1 -- defaults, inputs, and happy-path behavior>
-- <Plain-English rule 2 -- edge cases, error responses, or expiration/empty states>
-- **Out of scope:** <Anything explicitly excluded so scope does not creep>
+- <Plain-English rule 1: defaults, inputs, and happy-path behavior>
+- <Plain-English rule 2: edge cases, error responses, or expiration states>
+- **Out of scope:** <Anything explicitly excluded so scope stays tight>
 
 ## Acceptance Criteria
 - [ ] <Observable outcome 1 a human can verify without reading source code>
@@ -53,34 +51,28 @@ grounding** in the bottom half without prescribing brittle line-by-line code:
 ---
 
 ## Technical Context (For Implementation)
-- **Relevant packages & files:** <Package paths, entrypoints, and existing types/interfaces discovered during exploration>
-- **Existing patterns to reuse:** <Test helpers, error sentinel conventions, seams/constructors already in the repo>
-- **Constraints & guardrails:** <Settled library/stack boundaries, trust/security checks, compatibility rules, and any tempting shortcut to avoid -- state boundaries, NOT line-by-line code to copy>
-- **Verification & scope:** <Public test seams to add/extend (`go test -race`, table-driven cases, docs/README updates) + rough size: XS / S / M / L>
+- **Relevant packages & files:** <Package paths, entrypoints, and existing types/interfaces found during exploration>
+- **Existing patterns to reuse:** <Test helpers, sentinel errors, and seams/constructors already in the repo>
+- **Constraints & guardrails:** <Settled library boundaries, security/trust checks, compatibility rules, and tempting shortcuts to avoid without prescribing line-by-line code>
+- **Verification & scope:** <Public test seams to add (`go test -race`, table-driven cases, docs/README updates) plus rough size: XS / S / M / L>
 ~~~
 
 ### Formatting & Hygiene Rules
-- **Do not lock in brittle *how*:** Point to seams, interfaces, and constraints,
-  not 80 lines of pseudo-implementation that may go stale or block a cleaner
-  design during planning.
-- **Markdown safety:** Use ASCII punctuation (`--`, `->`, `...`) and wrap outer
-  code blocks in tildes (`~~~`) whenever inner examples contain backticks.
-- **Public repo scrub:** On public repositories, apply `publish-hygiene` before
-  showing or posting -- never include real secrets, local `/home/<user>` paths,
-  private hostnames, or non-public organization names.
+- Load `markdown` for formatting rules (tilde fences `~~~` around nested
+  backticks, and clean prose with zero em-dashes or `--` dash clauses).
+- On public repositories, apply `publish-hygiene` before previewing or filing so
+  secrets, `/home/<user>` paths, private hostnames, and internal org names never
+  appear in an issue.
 
-## 3. Show the Draft First, Then File
+## 3. Preview First, Then File via the Matching Tracker Skill
 
-1. **Always preview in chat first:** Show the drafted title and body (or the
-   saved draft path when preparing multiple security/backlog drafts) and wait
-   for the human's go-ahead before creating external tracker items.
-2. **Route per `AGENTS.md`:**
-   - **GitHub Issues (`github`):** Write the body to a temporary file and run
-     `gh issue create --title "..." --body-file <tmpfile>` to avoid shell
-     escaping bugs.
-   - **Jira (`jira`):** Create the story via the configured Jira MCP tool using
-     the repository's project key.
-   - **Local Markdown (`local`):** Write to git-ignored
-     `temp/issues/<NNN>-<slug>.md`.
-   - **Not declared yet in `AGENTS.md`:** Ask the user **once** which tracker
-     this repo uses and offer to record that one-line rule in `AGENTS.md`.
+1. **Show the draft in chat first** and wait for human approval before creating
+   any external ticket.
+2. **Load the matching tracker skill** based on what the user asked for (or the
+   repository default in `AGENTS.md` when no tracker was named):
+   - **GitHub Issues** (`"create a GitHub issue..."` or repo default `github`):
+     load `github-issues`.
+   - **Jira Tickets** (`"create a Jira ticket / story..."` or repo default
+     `jira`): load `jira-issues`.
+   - **Local Markdown** (`"save a local issue..."` or repo default `local`):
+     load `local-issues`.

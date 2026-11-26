@@ -5,7 +5,7 @@
   </picture>
 </p>
 
-# `sln-agentic-code` -- Agentic Coding Solution & Guided Walkthrough
+# `sln-agentic-code`: Agentic Coding Solution & Guided Walkthrough
 
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![CI](https://github.com/oakwood-commons/sln-agentic-code/actions/workflows/ci.yml/badge.svg)](https://github.com/oakwood-commons/sln-agentic-code/actions/workflows/ci.yml)
@@ -24,15 +24,15 @@ portable Go CI pipeline from **Oakwood Commons**.
 
 ---
 
-## Zero-Clone Setup (`scafctl` -- Linux, macOS & Windows)
+## Zero-Clone Setup (`scafctl` on Linux, macOS & Windows)
 
 [`scafctl`](https://github.com/oakwood-commons/scafctl) ships native binaries
 for **Linux, macOS, and Windows** (`amd64` and `arm64`) with an embedded
-cross-platform shell -- follow the
+cross-platform shell. Follow the
 **[`scafctl` Installation Guide](https://scafctl.oakwood-commons.org/docs/tutorials/getting-started/#installation)**
 (`brew install oakwood-commons/tap/scafctl` on macOS/Linux, or `.tar.gz` /
 Windows `.zip` binaries from
-[GitHub Releases](https://github.com/oakwood-commons/scafctl/releases)). Then
+[GitHub Releases](https://github.com/oakwood-commons/scafctl/releases)), then
 initialize your environment without cloning a repository:
 
 ~~~bash
@@ -66,8 +66,8 @@ Replace `agentic-code` above with `-f ./scafctl/solution.yaml`.)*
 
 | Directory / File | Role |
 |---|---|
-| `scafctl/solution.yaml` | Published `agentic-code` solution (user OpenCode and/or Antigravity `agy` setup + opt-in `install-go`, `init-repo`, and `configure-github` actions) |
-| `scafctl/user-opencode/` | Single-source user-level starter configs (`cloud` default + `ollama-hybrid`), 11 subagents, 11 slash commands, and 22 skills (including `planner`, `create-issue`, `security-audit`, `security-sweep`, `publish-hygiene`, `herdr`, `work-herd`, and `pr-autopilot` -- compiled automatically for `agy` when `-r harness=agy` or `both` is passed) |
+| `scafctl/solution.yaml` | Published `agentic-code` solution (user OpenCode and/or Antigravity `agy` setup + opt-in `install-go`, `init-repo`, `configure-github`, and `list-files` actions) |
+| `scafctl/user-opencode/` | Single-source user-level starter configs (`cloud` default + `ollama-hybrid`), 11 subagents, 11 slash commands, and 25 skills (including `planner`, `create-issue`, `github-issues`, `jira-issues`, `local-issues`, `security-audit`, `security-sweep`, `publish-hygiene`, `herdr`, `work-herd`, and `pr-autopilot`, compiled automatically for `agy` when `-r harness=agy` or `both` is passed) |
 | `scafctl/repo/` & `scafctl/go-ci/` | Bundled repo-contract templates (`AGENTS.md`, `REVIEW.md`, `.github/copilot-instructions.md`) and portable Go CI |
 | `docs/`, `home/`, `site/` | Hugo (`hugo-book`) 5-step Guided Walkthrough, Advanced Herdr Workflows & Reference site styled with `scafctl`'s Blueprint theme |
 | `AGENTS.md`, `REVIEW.md`, `.github/copilot-instructions.md` | Dogfooded **repo-level contracts** defining what this repo requires without forcing personal AI workflows |

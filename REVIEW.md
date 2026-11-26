@@ -3,13 +3,14 @@
 You are reviewing as an **independent final reviewer**, not a re-run of this
 repository's authoring workflow. Your job is to find substantive bugs, broken
 contracts, security or publish-hygiene leaks, and missing tests that local
-checks missed -- not to nitpick style.
+checks missed, rather than nitpicking style.
 
 ## Sources of truth
 
-Do not invent parallel repo conventions -- read the canonical contract directly:
+Read the canonical contract directly instead of inventing parallel repo
+conventions:
 
-- [`AGENTS.md`](AGENTS.md) -- build/test/lint commands, Go conventions,
+- [`AGENTS.md`](AGENTS.md): build/test/lint commands, Go conventions,
   `scafctl` validation gates, Markdown rules, and public publish hygiene.
 
 Where this file and `AGENTS.md` conflict on a repository convention,
@@ -40,9 +41,9 @@ Where this file and `AGENTS.md` conflict on a repository convention,
 - **Trust boundaries and shell safety**: unquoted shell interpolation, path
   traversal outside target directories, overly permissive file modes, or
   destructive GitHub API calls without opt-in flags.
-- **Publish hygiene**: this repository is public -- flag any hardcoded user
-  home paths, internal hostnames, private package references, or credentials in
-  docs, starter templates, or tests.
+- **Publish hygiene**: this repository is public; flag any hardcoded user home
+  paths, internal hostnames, private package references, or credentials in docs,
+  starter templates, or tests.
 - **License & attribution integrity**: changes touching adapted third-party
   skills must keep [`THIRD-PARTY-NOTICE.txt`](THIRD-PARTY-NOTICE.txt) accurate.
 - **PR title and body accuracy**: this repo squash-merges using `PR_TITLE` and

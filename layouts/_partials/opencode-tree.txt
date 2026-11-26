@@ -34,11 +34,14 @@
         ├── diagnosing-bugs/SKILL.md: skill
         ├── finish-issue/SKILL.md: skill
         ├── git-github-workflow/SKILL.md: skill
+        ├── github-issues/SKILL.md: skill
         ├── go-debug/SKILL.md: skill
         ├── go-perf/SKILL.md: skill
         ├── go/SKILL.md: skill
         ├── grilling/SKILL.md: skill
         ├── herdr/SKILL.md: skill
+        ├── jira-issues/SKILL.md: skill
+        ├── local-issues/SKILL.md: skill
         ├── markdown/SKILL.md: skill
         ├── planner/SKILL.md: skill
         ├── pr-autopilot/SKILL.md: skill

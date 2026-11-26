@@ -22,5 +22,5 @@ per-minute poll dumps.
    `S` seconds internally with zero per-cycle stdout. If cycle `N` finishes
    without matching, print `NO-MATCH after N cycles` and exit nonzero. Set the
    shell tool timeout above `N * S` seconds.
-3. Return **exactly one line** -- either the matched state or `NO-MATCH after N
+3. Return **exactly one line**: either the matched state or `NO-MATCH after N
    cycles`. Never modify files or state.

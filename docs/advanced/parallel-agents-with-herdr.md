@@ -5,37 +5,38 @@ weight: 10
 
 # Scaling Up: Parallel Issues with Herdr, DAG Plans & Autonomous Copilot
 
-Once Steps 1--5 click -- scoping in words, proving behavior with deterministic
-CI, and reading code once at PR time -- watching **one** terminal work through
-**one** issue at a time quickly becomes the bottleneck.
+Once Steps 1 through 5 click (scoping in words, proving behavior with
+deterministic CI, and reading code once at PR time), watching **one** terminal
+work through **one** issue at a time quickly becomes the bottleneck.
 
 Running 3 or 4 issues in parallel without chaos comes down to a simple layout:
 **you open one main Herdr window at the root of your repository**, and a
 Coordinator session inside that window spins up **isolated worker worktrees
-grouped together right underneath your repo in the left sidebar** -- each
-covering a separate issue that can safely run in parallel.
+grouped together right underneath your repo in the left sidebar**, each covering
+a separate issue that can safely run in parallel.
 
 Four bundled pieces in `agentic-code` (`herdr`, `work-herd`, `pr-autopilot`,
-and `waiter`) power that loop:
+and `waiter`) power that loop alongside `github-issues`, `jira-issues`, and
+`local-issues`:
 
-1. **One Main Repo Window + Grouped Workers (`herdr` skill)** -- you stay in
-   one Herdr window rooted in your main checkout; parallel worker worktrees nest
+1. **One Main Repo Window + Grouped Workers (`herdr` skill):** You stay in one
+   Herdr window rooted in your main checkout. Parallel worker worktrees nest
    directly underneath that parent repo in the sidebar (`working`, `blocked`,
    `done`, `idle`) with `--no-focus` so nothing steals your cursor or opens
    extra desktop windows.
-2. **Herdr DAG Planning & Ground-Truth Coordinator (`work-herd` skill)** --
-   inspects your shortlisted issues, builds an **issue dependency & hotspot
-   [DAG](/docs/reference/glossary.md#dag)** (dependency order with no collisions)
-   before spawning workers, double-checks workers' `"DONE"` claims, and refills
-   open slots as you merge PRs.
-3. **Autonomous Copilot Convergence (`pr-autopilot` + `waiter`)** -- each
-   worker drives its own PR through GitHub Actions CI and GitHub Copilot
-   reviews to merge-ready without human babysitting (and without ever running
+2. **Herdr DAG Planning & Ground-Truth Coordinator (`work-herd` skill):**
+   Inspects your shortlisted GitHub issues, Jira tickets, or local issues,
+   builds an **issue dependency and hotspot [DAG](/docs/reference/glossary.md#dag)**
+   (dependency order with no collisions) before spawning workers, double-checks
+   workers' `"DONE"` claims, and refills open slots as you merge PRs.
+3. **Autonomous Copilot Convergence (`pr-autopilot` + `waiter`):** Each worker
+   drives its own PR through GitHub Actions CI and GitHub Copilot reviews to
+   merge-ready without human babysitting (and without ever running
    `gh pr merge`).
 
 ~~~tree
 Herdr Window (Left Sidebar)
-└── my-service                  [Coordinator -- root checkout on main]
+└── my-service                  [Coordinator: root checkout on main]
     ├── #101 expiring-links     [working]   feat/101-expiring-links (worktree)
     ├── #102 portable-go-ci     [working]   feat/102-portable-go-ci (worktree)
     └── #103 powershell-tabs    [done]      feat/103-powershell-tabs (worktree)
@@ -45,7 +46,7 @@ Herdr Window (Left Sidebar)
   <div class="bp-flow-node is-center">
     <span class="bp-flow-step">01 // MAIN REPO WINDOW (COORDINATOR + work-herd SKILL)</span>
     <span class="bp-flow-title">Shortlist Sprint / Topic Issues -&gt; <code>temp/plans/&lt;repo&gt;-herd.md</code></span>
-    <span class="bp-flow-desc">Filters backlog around your focus area, then maps dependencies + hotspot files into a conflict-free Issue DAG.</span>
+    <span class="bp-flow-desc">Filters GitHub or Jira tickets around your focus area, then maps dependencies + hotspot files into a conflict-free Issue DAG.</span>
   </div>
   <div class="bp-flow-arrow-v" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg><span class="bp-flow-cond">Spins up grouped child worktrees under the repo (--no-focus)</span><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M6 13l6 6 6-6"/></svg></div>
   <div class="bp-flow-row cols-3-plain">
@@ -90,7 +91,7 @@ Herdr Window (Left Sidebar)
 ## 1. One-Time Herdr Integration Setup
 
 Herdr ships its own version-matched CLI skill inside the `herdr` binary (paired
-with the `work-herd` orchestration skill in `~/.config/opencode/skills/work-herd/`):
+with the `work-herd` orchestration skill):
 
 ~~~shell
 # Install Herdr state-tracking hooks for OpenCode (also supports antigravity-cli, claude, codex, copilot)
@@ -111,43 +112,44 @@ herdr --skill
 
 ## 2. Narrow the Candidate List, Then Build a Herdr DAG Plan
 
-Real repositories often have hundreds or thousands of open issues, and four
+Real repositories often have hundreds or thousands of open tickets, and four
 green PRs that all touch the same shared file turn into three rebase conflicts
 the moment the first PR merges.
 
-Give your **Coordinator** session inside Herdr a **focus filter** -- next-sprint
-priorities, a subsystem or problem area you care about, a label/milestone, or a
-handful of issue numbers -- so it shortlists the right candidates first and then
-builds the Herdr [DAG](/docs/reference/glossary.md#dag) plan:
+Give your **Coordinator** session inside Herdr a **focus filter** (next-sprint
+priorities, a subsystem you care about, a GitHub label or milestone, or your
+open Jira sprint tickets) so `github-issues` or `jira-issues` shortlists the
+right candidates first and `work-herd` builds the
+[DAG](/docs/reference/glossary.md#dag) plan:
 
 ~~~text
-Give me a shortlist of issues to tackle in the next sprint (or issues related to CLI output and error handling), then come up with a Herdr plan once I confirm the list.
+Give me a shortlist of GitHub issues to tackle in the next sprint (or issues related to CLI output and error handling), then come up with a Herdr plan once I confirm the list.
 ~~~
 
-*(Already know the area, milestone, or issue IDs you want to run? Point at them
+*(Tracking stories in Jira or already know the exact tickets? Point at them
 directly:)*
 
 ~~~text
-Look at the open issues related to shortener storage and Go CI (or issues #101-#105) and come up with a Herdr plan.
+Look at my open Jira tickets in PROJ for the current sprint (or GitHub issues #101 through #105) and come up with a Herdr plan.
 ~~~
 
-Once the shortlist is set, the `work-herd` skill inspects those issues against
-the codebase and writes a disposable, git-ignored plan doc
+Once the shortlist is set, `work-herd` inspects those tickets against the
+codebase and writes a disposable, git-ignored plan doc
 (`temp/plans/<repo>-herd.md`) mapping out:
 
-1. **Logical dependencies** -- e.g., `#104` needs the new interface introduced
-   by `#101`.
-2. **Hotspot file edges** -- if both `#101` and `#105` edit the same root
+1. **Logical dependencies:** for example, `#104` needs the new interface
+   introduced by `#101`.
+2. **Hotspot file edges:** if both `#101` and `#105` edit the same root
    registration table or `actions.yaml`, `work-herd` adds a DAG edge (`#101 ->
    #105`) or assigns the shared table edit to one PR so concurrent branches
    never collide.
-3. **Wave lineup & automatic slot refilling** -- Wave 1 fills up to your
-   concurrency cap (default: 4 workers); as soon as you merge `#101`, the
+3. **Wave lineup & automatic slot refilling:** Wave 1 fills up to your
+   concurrency cap (default: 4 workers). As soon as you merge `#101`, the
    coordinator tears down `#101`'s worktree and immediately provisions `#104`
    into the open slot.
 
 ~~~text
-Wave 1 (Ready Now -- non-overlapping packages):
+Wave 1 (Ready Now, non-overlapping packages):
   - #101 (internal/shortener)   --> unblocks #104
   - #102 (ci/go-ci)             --> independent
   - #103 (docs/reference)       --> independent
@@ -157,8 +159,7 @@ Wave 2 (Queued in DAG):
   - #105 (internal/shortener)   [blocked on #101: hotspot shortener.go]
 ~~~
 
-Once the DAG looks right, tell the coordinator: *"Looks good -- kick off Wave
-1."*
+Once the DAG looks right, tell the coordinator: *"Looks good, kick off Wave 1."*
 
 ---
 
@@ -174,7 +175,7 @@ automatically hands its new PR to **`pr-autopilot`**:
   rather than dumping per-minute status JSON into the worker's context.
 - **Reads all 4 PR surfaces:** Checks paginated GraphQL `reviewThreads`,
   collapsed `<details>` findings inside Copilot's review body, general PR
-  comments, and `gh pr checks` -- guarding against Copilot `"insufficient
+  comments, and `gh pr checks`, while guarding against Copilot `"insufficient
   remaining quota"` comments posing as clean reviews.
 - **Protects Copilot quota (`review_on_push: false`):** Replies and resolves
   nits via GraphQL *without* pushing, batches mechanical code fixes into **one**
@@ -201,6 +202,6 @@ Your job stays calm even with four workers running on a second workstation
    feedback.
 2. **Answer `blocked` design questions** when Herdr's sidebar flags a real
    product choice.
-3. **Read each `DONE` PR diff once on GitHub and click Merge** -- watching the
+3. **Read each `DONE` PR diff once on GitHub and click Merge**, watching the
    coordinator pull `main`, clean up the worktree, and launch the next issue
    from your Herdr DAG.

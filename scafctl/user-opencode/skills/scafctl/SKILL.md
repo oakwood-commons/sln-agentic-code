@@ -41,10 +41,10 @@ inputs, or CEL functions from memory.
    - Note that when a `continueOnError: true` action fails, downstream
      `dependsOn` actions are skipped (`dependency-failed`).
 3. **Deterministic validation before finishing:**
-   - `scafctl lint -f <file>` (or `lint_solution` MCP tool) -- zero errors or
+   - `scafctl lint -f <file>` (or `lint_solution` MCP tool) with zero errors or
      stale dependency warnings.
-   - `scafctl test functional -f <file>` (or `run_solution_tests` MCP tool) --
-     every test case in `spec.testing.cases` must carry `description` and
+   - `scafctl test functional -f <file>` (or `run_solution_tests` MCP tool),
+     where every test case in `spec.testing.cases` carries `description` and
      `assertions` (or `snapshot`).
    - For catalog solutions (`bundle:` present), run
      `scafctl package solution -f <file> --dry-run --no-vendor` (omit
