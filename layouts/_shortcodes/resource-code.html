@@ -1,0 +1,4 @@
+{{- $name := .Get 0 -}}
+{{- $lang := .Get 1 | default "tree" -}}
+{{- $content := partial $name . -}}
+<div class="highlight"><pre tabindex="0"><code class="language-{{ $lang }}" data-lang="{{ $lang }}">{{ strings.TrimRight "\r\n" $content }}</code></pre></div>

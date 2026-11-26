@@ -15,8 +15,14 @@ Blueprint documentation site (Hugo `hugo-book`), portable `scafctl` Go CI
 definitions (`ci/`), and runnable sample Go module (`examples/go-app/`) under
 `oakwood-commons`.
 
-## Git & Pull Requests
+## Issue Tracking & Git
 
+- **Issue tracking**:
+  - Repository changes to `oakwood-commons/sln-agentic-code`: GitHub Issues via
+    `gh` CLI (`gh issue create` / `gh issue view`).
+  - Walkthrough practice on `shorty` (`examples/go-app/`): local Markdown issues
+    in git-ignored `temp/issues/<NNN>-<slug>.md` (unless the user is working on
+    their own GitHub fork).
 - **Conventional commits**: `feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `test:`
   (`!` for breaking changes).
 - **Signing & DCO**: every commit is signed and carries a `Signed-off-by:`
@@ -34,12 +40,16 @@ definitions (`ci/`), and runnable sample Go module (`examples/go-app/`) under
 
 Root [`actions.yaml`](actions.yaml) is auto-discovered by `scafctl`:
 
-~~~bash
-# Install or verify required tools (hugo, golangci-lint, gosec) across Linux/macOS/Windows
+~~~shell
+# Install or verify required tools (hugo, gh, go, golangci-lint, gosec) across Linux/macOS/Windows
 scafctl run action install-tools
 
 # Run full repository verification (Go CI on examples/go-app + scafctl lint & tests + Hugo build)
 scafctl run action ci
+
+# Lint and run functional tests across all repository scafctl solutions
+scafctl run action lint-solutions
+scafctl run action test-solutions
 
 # Run Go CI against examples/go-app via the root shorthand
 scafctl run action go-ci
@@ -49,6 +59,9 @@ scafctl run action docs-build
 
 # Serve Hugo documentation locally at http://localhost:1313
 scafctl run action docs-serve
+
+# Configure GitHub repository settings & rulesets idempotently
+scafctl run action configure-github -r owner=oakwood-commons -r repo=sln-agentic-code
 
 # Run portable Go CI directly against examples/go-app
 scafctl run action ci -f ci/go-ci/actions.yaml -r workdir=examples/go-app
@@ -72,7 +85,7 @@ scafctl run action ci -f ci/go-ci/actions.yaml -r workdir=examples/go-app
 - Every `scafctl` solution/action file (`actions.yaml`, `ci/go-ci/actions.yaml`,
   `scafctl/solution.yaml`) must pass `scafctl lint -f <file>`,
   `scafctl test functional -f <file>`, and (for `scafctl/solution.yaml`)
-  `scafctl package solution -f ./scafctl/solution.yaml --dry-run`.
+  `scafctl package solution -f ./scafctl/solution.yaml --dry-run --no-vendor`.
 
 ## Markdown & Publish Hygiene
 

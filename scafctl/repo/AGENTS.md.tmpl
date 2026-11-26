@@ -12,6 +12,28 @@ in [`REVIEW.md`](REVIEW.md).
 
 Go module: `{{ .module_name }}`
 
+## Issue Tracking
+
+{{- if eq .issue_tracker "github" }}
+- **GitHub Issues (`gh` CLI)**: Create and inspect issues with `gh issue create`
+  and `gh issue view <N>`, and link pull requests with `Closes #<N>`.
+{{- else if eq .issue_tracker "jira" }}
+- **Jira User Stories (MCP)**: Create and inspect stories under project
+  `{{ .jira_project }}` via the configured Jira/Atlassian MCP server, and name
+  branches `<type>/{{ .jira_project }}-<N>-<slug>`.
+{{- else if eq .issue_tracker "local" }}
+- **Local Markdown Issues**: Create and inspect issues as Markdown files in
+  git-ignored `temp/issues/<NNN>-<slug>.md`.
+{{- else if eq .issue_tracker "jira+github" }}
+- **Jira + GitHub Issues**: Track product user stories in Jira (`{{ .jira_project }}-<N>`)
+  via MCP, and track repository-specific bugs or technical tasks in GitHub
+  Issues (`gh issue`).
+{{- else if eq .issue_tracker "github+local" }}
+- **GitHub + Local Issues**: Track shared repository issues in GitHub Issues
+  (`gh issue`), and keep local spike or breakdown notes in git-ignored
+  `temp/issues/<NNN>-<slug>.md`.
+{{- end }}
+
 ## Git & Pull Requests
 
 - **Conventional commits**: `feat:`, `fix:`, `docs:`, `chore:`, `ci:`, `test:`
@@ -28,9 +50,9 @@ Go module: `{{ .module_name }}`
 
 ## Build, Test & Lint
 
-~~~bash
+~~~shell
 {{- if .include_go_ci }}
-# Install missing CI tools (golangci-lint, gosec) into .tool/bin
+# Install missing CI tools (Go 1.26+, golangci-lint, gosec) into .tool/bin
 scafctl run action install-tools -f ./ci/go-ci/actions.yaml
 
 # Run full portable Go CI locally (gofmt, vet, lint, gosec, race tests, coverage, build)
@@ -49,5 +71,6 @@ go test -race ./...
   exercising public interfaces rather than private internals.
 - Close opened files, network bodies, and goroutines cleanly; respect
   `context.Context` cancellation.
+- Keep scratch notes and local draft issues inside git-ignored `temp/` (`temp/issues/`).
 - Never commit secrets, credentials, or user-specific home paths (such as
   `/home/<user>/` or `/Users/<user>/`).

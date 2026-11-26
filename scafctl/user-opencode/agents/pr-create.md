@@ -19,6 +19,7 @@ Load the `git-github-workflow` skill first and follow its rules.
      squash-merge (`PR_TITLE` / `PR_BODY`) accurately reflects `HEAD`.
 2. **Pre-PR gate check**: Never open a PR over unreviewed code -- confirm the
    local `/finish-issue` gate and repo build/test/lint checks passed first.
-3. **Respect human approval**: Always show the proposed commit/PR title and
-   body and respect shell approval gates for `git commit`, `git push`, and
-   `gh pr create`. Never run `gh pr merge`.
+3. **Respect human approval**: Always show the proposed PR title and body,
+   never run `git commit --amend` on published commits, and respect shell
+   approval gates for `gh issue create`, `git push`, and `gh pr create`. Never
+   run `gh pr merge`.

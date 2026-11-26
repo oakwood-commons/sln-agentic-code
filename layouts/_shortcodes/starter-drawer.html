@@ -1,0 +1,76 @@
+{{- $rel := .Get "path" -}}
+{{- $res := resources.Get (printf "starter/%s" $rel) -}}
+{{- if not $res -}}
+  {{- errorf "starter-drawer: %q not found under scafctl/user-opencode/" $rel -}}
+{{- end -}}
+{{- $raw := $res.Content -}}
+{{- $fm := dict -}}
+{{- range (findRE `(?s)^\s*---\r?\n.*?\r?\n---(?:\r?\n|$)` $raw 1) -}}
+  {{- $fmYaml := replaceRE `(?s)^\s*---\r?\n|\r?\n---\s*$` "" . -}}
+  {{- $fm = $fmYaml | transform.Unmarshal -}}
+{{- end -}}
+{{- $base := path.Base $rel -}}
+{{- $stem := strings.TrimSuffix (path.Ext $base) $base -}}
+{{- $defaultName := $stem -}}
+{{- if and (hasPrefix $rel "skills/") (eq $base "SKILL.md") -}}
+  {{- $defaultName = $fm.name | default (path.Base (path.Dir $rel)) -}}
+{{- else if hasPrefix $rel "skills/" -}}
+  {{- $defaultName = strings.TrimPrefix "skills/" $rel -}}
+{{- else if hasPrefix $rel "commands/" -}}
+  {{- $defaultName = printf "/%s" $stem -}}
+{{- else if hasPrefix $rel "instructions/" -}}
+  {{- $defaultName = $base -}}
+{{- end -}}
+{{- $name := .Get "name" | default $defaultName -}}
+{{- $defaultMeta := "" -}}
+{{- if hasPrefix $rel "agents/" -}}
+  {{- $readOnly := false -}}
+  {{- range $fm.permissions -}}
+    {{- if and (eq .action "edit") (eq .effect "deny") -}}
+      {{- $readOnly = true -}}
+    {{- end -}}
+  {{- end -}}
+  {{- $defaultMeta = cond $readOnly "read-only (edit: deny)" "subagent" -}}
+{{- else if hasPrefix $rel "commands/" -}}
+  {{- with $fm.agent -}}
+    {{- $defaultMeta = printf "agent: %v" . -}}
+  {{- end -}}
+{{- end -}}
+{{- $meta := .Get "meta" | default $defaultMeta -}}
+{{- $summary := .Get "summary" | default $fm.description -}}
+{{- $chevron := "View file" -}}
+{{- if and (hasPrefix $rel "skills/") (eq $base "SKILL.md") -}}
+  {{- $chevron = "View SKILL.md" -}}
+{{- else if hasPrefix $rel "skills/" -}}
+  {{- $chevron = "View template" -}}
+{{- else if hasPrefix $rel "agents/" -}}
+  {{- $chevron = "View agent.md" -}}
+{{- else if hasPrefix $rel "commands/" -}}
+  {{- $chevron = "View command.md" -}}
+{{- else if hasPrefix $rel "instructions/" -}}
+  {{- $chevron = "View policy" -}}
+{{- end -}}
+{{- $body := replaceRE `(?s)^\s*---\r?\n.*?\r?\n---(?:\r?\n|$)\r?\n*` "" $raw -}}
+{{- $body = replaceRE `(?s)^\s*<!--.*?-->\r?\n*` "" $body -}}
+{{- $idPrefix := replaceRE `[^a-zA-Z0-9_-]+` "-" (strings.TrimSuffix (path.Ext $rel) $rel) -}}
+{{- $rendered := $body | $.Page.RenderString (dict "display" "block") | string -}}
+{{- $rendered = replaceRE `(<h[1-6][^>]*\sid=")([^"]+)(")` (printf `${1}%s-${2}${3}` $idPrefix) $rendered -}}
+{{- $rendered = replaceRE `(<a\s+class="anchor"\s+href="#)([^"]+)(")` (printf `${1}%s-${2}${3}` $idPrefix) $rendered -}}
+{{- $ghUrl := printf "https://github.com/oakwood-commons/sln-agentic-code/blob/main/scafctl/user-opencode/%s" $rel -}}
+<details class="bp-skill-drawer">
+  <summary class="bp-skill-summary">
+    <div class="bp-skill-head">
+      <code class="bp-skill-name">{{ $name }}</code>
+      {{- if $meta }}<span class="bp-skill-meta">{{ $meta }}</span>{{ end -}}
+      <span class="bp-skill-chevron" aria-hidden="true">{{ $chevron }}</span>
+    </div>
+    <span class="bp-skill-desc">{{ $summary }}</span>
+  </summary>
+  <div class="bp-skill-body">
+    <div class="bp-skill-toolbar">
+      <span>Installed at <code>~/.config/opencode/{{ $rel }}</code></span>
+      <a href="{{ $ghUrl }}" target="_blank" rel="noopener noreferrer">View raw on GitHub -&gt;</a>
+    </div>
+    <div class="bp-skill-markdown">{{ $rendered | safeHTML }}</div>
+  </div>
+</details>

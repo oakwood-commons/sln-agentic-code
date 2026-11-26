@@ -11,10 +11,10 @@
         "baseURL": "http://localhost:11434/v1"
       },
       "models": {
-        "qwen3-coder:30b": {
-          "name": "Qwen3 Coder 30B (Local)",
-          "capabilities": { "tools": true, "reasoning": { "supported": false } },
-          "limit": { "context": 64000, "output": 8192 }
+        "qwen3.8:27b": {
+          "name": "Qwen3.8 27B (Local)",
+          "capabilities": { "tools": true, "reasoning": { "supported": true } },
+          "limit": { "context": 131072, "output": 8192 }
         },
         "qwen3.5:9b": {
           "name": "Qwen3.5 9B Utility (Local)",
@@ -24,40 +24,37 @@
       }
     }
   },
-  "model": "ollama/qwen3-coder:30b",
+  "model": "ollama/qwen3.8:27b",
   "instructions": [
     "~/.config/opencode/instructions/workflow-policy.md"
   ],
-  "plugins": [
-    "github:AxeForce/opencode-vibeguard-v2",
-    "@tarquinen/opencode-dcp@3.2.0",
-    "github:oakwood-commons/spiral-guard#v2"
-  ],
   "agents": {
     // Cloud frontier models for up-front design, review, and loop-breaking
-    "plan": { "model": "anthropic/claude-opus-4-5" },
-    "planner": { "model": "anthropic/claude-opus-4-5" },
-    "code-reviewer": { "model": "anthropic/claude-opus-4-5" },
-    "pr-reviewer": { "model": "anthropic/claude-opus-4-5" },
-    "review-buster": { "model": "openai/gpt-5" },
+    "plan": { "model": "anthropic/claude-opus-5-5" },
+    "planner": { "model": "anthropic/claude-opus-5-5" },
+    "code-reviewer": { "model": "anthropic/claude-opus-5-5" },
+    "pr-reviewer": { "model": "anthropic/claude-opus-5-5" },
+    "security-auditor": { "model": "anthropic/claude-opus-5-5" },
+    "review-buster": { "model": "openai/gpt-6.2-astra" },
     // Local GPU workhorse for everyday TDD implementation and checks
-    "build": { "model": "ollama/qwen3-coder:30b" },
-    "general": { "model": "ollama/qwen3-coder:30b" },
-    "go-tester": { "model": "ollama/qwen3-coder:30b" },
-    "artifact-auditor": { "model": "ollama/qwen3-coder:30b" },
-    "docs-writer": { "model": "ollama/qwen3-coder:30b" },
-    "pr-create": { "model": "ollama/qwen3-coder:30b" },
+    "build": { "model": "ollama/qwen3.8:27b" },
+    "general": { "model": "ollama/qwen3.8:27b" },
+    "go-tester": { "model": "ollama/qwen3.8:27b" },
+    "artifact-auditor": { "model": "ollama/qwen3.8:27b" },
+    "docs-writer": { "model": "ollama/qwen3.8:27b" },
+    "pr-create": { "model": "ollama/qwen3.8:27b" },
+    "pr-autopilot": { "model": "ollama/qwen3.8:27b" },
     "explore": { "model": "ollama/qwen3.5:9b" },
+    "waiter": { "model": "ollama/qwen3.5:9b" },
     "title": { "model": "ollama/qwen3.5:9b" },
     "compaction": { "model": "ollama/qwen3.5:9b" }
   },
   "permissions": [
     { "action": "shell", "resource": "*", "effect": "allow" },
-    { "action": "shell", "resource": "git add*", "effect": "ask" },
-    { "action": "shell", "resource": "git commit*", "effect": "ask" },
     { "action": "shell", "resource": "git commit *--amend*", "effect": "deny" },
     { "action": "shell", "resource": "git push*", "effect": "ask" },
     { "action": "shell", "resource": "git tag*", "effect": "ask" },
+    { "action": "shell", "resource": "gh issue create*", "effect": "ask" },
     { "action": "shell", "resource": "gh pr create*", "effect": "ask" },
     { "action": "shell", "resource": "gh pr merge*", "effect": "deny" },
     { "action": "shell", "resource": "gh release*", "effect": "ask" },
@@ -70,6 +67,11 @@
         "type": "local",
         "command": ["scafctl", "mcp", "serve"]
       }
+      // Optional: uncomment to draft and triage Jira user stories via OAuth 2.1:
+      // ,"atlassian": {
+      //   "type": "remote",
+      //   "url": "https://mcp.atlassian.com/v2/mcp"
+      // }
     }
   }
 }

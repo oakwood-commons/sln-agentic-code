@@ -37,6 +37,10 @@ spec:
       type: string
       description: Minimum statement coverage percentage (0-100)
       default: "70"
+    - name: go-version
+      type: string
+      description: Pinned Go toolchain version installed if Go 1.26+ is missing
+      default: "1.26.11"
     - name: race
       type: string
       description: Enable Go race detector when a C compiler is present
@@ -78,6 +82,8 @@ spec:
           value: $(params.build-pkg)
         - name: MIN_COVERAGE
           value: $(params.min-coverage)
+        - name: GO_VERSION
+          value: $(params.go-version)
         - name: ENABLE_RACE
           value: $(params.race)
         - name: RUN_LINT
@@ -120,6 +126,7 @@ spec:
           -r "tools_bin=${TOOLS_BIN}" \
           -r "build_pkg=${BUILD_PKG}" \
           -r "min_coverage=${MIN_COVERAGE}" \
+          -r "go_version=${GO_VERSION}" \
           -r "race=${ENABLE_RACE}" \
           -r "run_lint=${RUN_LINT}" \
           -r "run_gosec=${RUN_GOSEC}"

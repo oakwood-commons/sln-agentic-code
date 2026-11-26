@@ -5,10 +5,15 @@ description: "Use when creating branches/worktrees, writing signed Conventional 
 
 # Git, GitHub PR & Copilot Review Loop Workflow
 
-## 1. Branching, Worktrees & Signed Conventional Commits
+## 1. Issues (Local, GitHub, or Jira MCP), Branching & Signed Commits
 
-- **Branch naming**: `<type>/<issue#>-<slug>` (e.g., `feat/42-repo-readiness`,
-  `fix/51-nil-reader`) or `<type>/<slug>` when no issue exists.
+- **Issue tracking**: Track agreed scope in a GitHub Issue (`gh issue create` /
+  `gh issue view <N>`), a Jira user story via MCP (`PROJ-123`), or a Markdown
+  issue in git-ignored `temp/issues/<NNN>-<slug>.md` when practicing locally or
+  working without upstream issue access.
+- **Branch naming**: `<type>/<issue-id>-<slug>` (e.g., `feat/42-repo-readiness`,
+  `feat/PROJ-123-expiring-links`, `feat/001-expiring-links`) or `<type>/<slug>`
+  when no issue exists.
 - **Isolated worktrees**: For parallel or disturbance-free work, create a
   sibling worktree (`git worktree add ../<repo>-worktrees/<slug> -b <branch>`)
   and start your coding session rooted inside that worktree so LSP and git state
@@ -74,14 +79,14 @@ request quota fast and creates noisy review churn. Enforce these guardrails:
 1. **Repo ruleset (`review_on_push: false`)**: Configure Copilot to review
    ready-for-review PRs once on open (`review_draft_pull_requests: false`),
    never automatically on every push.
-2. **Local `/finish-issue` Before PR Open (`$0`)**: Catch bugs, missing tests,
-   and `gosec` issues locally before Round 1 ever runs.
+2. **Local `/finish-issue` Before PR Open (0 PR quota)**: Catch bugs, missing
+   tests, and `gosec` issues locally before Round 1 ever runs.
 3. **CI-Green First**: **NEVER** request a Copilot re-review immediately after
    `git push`. Wait until 100% of GitHub CI checks on `HEAD` finish green so
    broken builds spend zero Copilot credits.
 4. **Smart Post-Round-1 Re-Review Gate**:
    - **Pure rebase or docs-only delta after `No issues found`**: Do **not**
-     re-request Copilot (`$0`).
+     re-request Copilot (0 Copilot review credits).
    - **Code fix addressing prior Copilot findings**: Batch all mechanical fixes
      into **one** locally reviewed commit + PR body sync, wait for green CI, and
      then request a Copilot re-review (`gh api -X POST

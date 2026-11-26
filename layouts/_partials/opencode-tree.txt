@@ -1,0 +1,54 @@
+.
+└── opencode_files
+    ├── THIRD-PARTY-NOTICE.txt: MIT skill notices
+    ├── agents/
+    │   ├── artifact-auditor.md: subagent
+    │   ├── code-reviewer.md: subagent
+    │   ├── docs-writer.md: subagent
+    │   ├── go-tester.md: subagent
+    │   ├── planner.md: subagent
+    │   ├── pr-autopilot.md: subagent
+    │   ├── pr-create.md: subagent
+    │   ├── pr-reviewer.md: subagent
+    │   ├── review-buster.md: subagent
+    │   ├── security-auditor.md: subagent
+    │   └── waiter.md: subagent
+    ├── commands/
+    │   ├── create-issue.md: slash command
+    │   ├── finish-issue.md: slash command
+    │   ├── handoff.md: slash command
+    │   ├── interview.md: slash command
+    │   ├── plan.md: slash command
+    │   ├── pr-autopilot.md: slash command
+    │   ├── pr-create.md: slash command
+    │   ├── pr-review.md: slash command
+    │   ├── review-buster.md: slash command
+    │   ├── review.md: slash command
+    │   └── wait-what.md: slash command
+    ├── instructions/
+    │   └── workflow-policy.md: standing policy
+    ├── opencode.jsonc: model routing & MCP servers
+    └── skills/
+        ├── codebase-design/SKILL.md: skill
+        ├── create-issue/SKILL.md: skill
+        ├── diagnosing-bugs/SKILL.md: skill
+        ├── finish-issue/SKILL.md: skill
+        ├── git-github-workflow/SKILL.md: skill
+        ├── go-debug/SKILL.md: skill
+        ├── go-perf/SKILL.md: skill
+        ├── go/SKILL.md: skill
+        ├── grilling/SKILL.md: skill
+        ├── herdr/SKILL.md: skill
+        ├── markdown/SKILL.md: skill
+        ├── planner/SKILL.md: skill
+        ├── pr-autopilot/SKILL.md: skill
+        ├── publish-hygiene/SKILL.md: skill
+        ├── risk-scaled-effort/SKILL.md: skill
+        ├── scafctl/SKILL.md: skill
+        ├── security-audit/SKILL.md: skill
+        ├── security-sweep/SKILL.md: skill
+        ├── stepwise-interview/SKILL.md: skill
+        ├── tdd/SKILL.md: skill
+        ├── wait-what/SKILL.md: skill
+        ├── work-herd/SKILL.md: skill
+        └── work-herd/worker-prompt.md: template

@@ -8,6 +8,7 @@ on:
       - "home/**"
       - "assets/**"
       - "layouts/**"
+      - "scafctl/user-opencode/**"
       - "static/**"
       - "site/**"
       - ".github/workflows/pages.yml"

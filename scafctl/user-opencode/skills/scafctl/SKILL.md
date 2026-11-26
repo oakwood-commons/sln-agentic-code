@@ -47,5 +47,6 @@ inputs, or CEL functions from memory.
      every test case in `spec.testing.cases` must carry `description` and
      `assertions` (or `snapshot`).
    - For catalog solutions (`bundle:` present), run
-     `scafctl package solution -f <file> --dry-run` to prove bundle completeness
-     before committing.
+     `scafctl package solution -f <file> --dry-run --no-vendor` (omit
+     `--no-vendor` when `bundle.plugins` are vendored locally) to prove bundle
+     completeness before committing.

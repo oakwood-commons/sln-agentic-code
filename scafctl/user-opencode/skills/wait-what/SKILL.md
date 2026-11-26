@@ -1,6 +1,6 @@
 ---
 name: wait-what
-description: "Use when the user signals your last message didn't land ('what?', 'what are you saying', 'I don't follow') -- re-pitch it in plain language instead of jargon or compressed shorthand."
+description: "Use when the user signals your last message didn't land ('what?', 'what do you mean?', 'what are you saying', 'I don't follow') -- re-pitch it in plain language instead of jargon or compressed shorthand."
 ---
 
 <!-- Adapted from mattpocock/skills (MIT License): https://github.com/mattpocock/skills -->

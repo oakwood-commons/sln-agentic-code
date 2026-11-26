@@ -1,16 +1,24 @@
 # Agentic Coding Setup & Repository Starter Solution (agentic-code).
 #
 # Usage (from published official catalog -- zero git clone required):
-#   1. Default workflow -- initialize user-level OpenCode setup (~/.config/opencode):
+#   1. Default workflow -- initialize user-level OpenCode and/or Antigravity (agy) setup:
 #      scafctl run solution agentic-code --dry-run
 #      scafctl run solution agentic-code
-#      scafctl run solution agentic-code -r profile=ollama-hybrid
+#      scafctl run solution agentic-code -r harness=agy
+#      scafctl run solution agentic-code -r harness=both
+#      scafctl run solution agentic-code -r profile=ollama-hybrid -r overwrite=true
 #
-#   2. Opt-in action -- scaffold repo-level AI contracts & Go CI (AGENTS.md, REVIEW.md, .github/copilot-instructions.md):
+#   2. Opt-in action -- verify Go 1.26+ or install it into ~/.local/go across Linux, macOS, and Windows (no sudo/admin):
+#      scafctl run solution agentic-code --action install-go
+#
+#   3. Opt-in action -- scaffold repo-level AI contracts & Go CI (AGENTS.md, REVIEW.md, .github/copilot-instructions.md):
 #      scafctl run solution agentic-code --action init-repo -r repo_dir=/path/to/repo -r project_name=my-service -r module_name=github.com/my-org/my-service
 #
-#   3. Opt-in action -- configure GitHub repository settings & rulesets (squash-only PR_TITLE/PR_BODY, signed commits, Copilot review_on_push:false):
+#   4. Opt-in action -- configure GitHub repository settings & rulesets (squash-only PR_TITLE/PR_BODY, signed commits, Copilot review_on_push:false):
 #      scafctl run solution agentic-code --action configure-github -r owner=my-org -r repo=my-service
+#
+#   5. Opt-in action -- inspect the structured file tree bundled in agentic-code:
+#      scafctl run solution agentic-code --action list-files -o tree
 #
 # (When running from a local repository clone before catalog publish, replace "agentic-code" with "-f ./scafctl/solution.yaml".)
 
@@ -25,15 +33,17 @@ metadata:
   tags:
     - agentic-coding
     - opencode
+    - antigravity
     - github
     - copilot
     - go
   description: |
-    Initializes a developer's personal OpenCode environment by default
-    (~/.config/opencode skills, agents, commands, and scafctl MCP), with opt-in
-    actions to scaffold repository-level AI contracts (AGENTS.md, REVIEW.md,
-    Copilot instructions, and portable Go CI) and configure GitHub repository
-    settings and rulesets idempotently.
+    Initializes a developer's personal AI coding environment for OpenCode
+    (~/.config/opencode), Antigravity (~/.gemini/config via -r harness=agy), or
+    both (-r harness=both) from one single source of truth, with opt-in actions
+    to verify/install Go 1.26+, scaffold repository-level AI contracts
+    (AGENTS.md, REVIEW.md, Copilot instructions, and portable Go CI), and
+    configure GitHub repository settings and rulesets idempotently.
 
 bundle:
   include:
@@ -53,9 +63,29 @@ bundle:
     - name: github
       kind: provider
       version: latest
+    - name: metadata
+      kind: provider
+      version: latest
 
 spec:
   resolvers:
+    platform:
+      description: Runtime OS and CPU architecture for tool installation
+      internal: true
+      resolve:
+        with:
+          - provider: metadata
+            inputs: {}
+      validate:
+        with:
+          - provider: validation
+            inputs:
+              expression: '__self.os in ["linux", "darwin", "windows"]'
+            message: "Unsupported operating system (expected linux, darwin, or windows)"
+          - provider: validation
+            inputs:
+              expression: '__self.arch in ["amd64", "arm64"]'
+            message: "Unsupported CPU architecture (expected amd64 or arm64)"
     env_home:
       description: POSIX HOME directory when set
       internal: true
@@ -82,6 +112,24 @@ spec:
               default: ""
               raw: true
 
+    harness:
+      description: Target coding harness to configure (opencode, agy, or both)
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: harness
+          - provider: static
+            inputs:
+              value: "opencode"
+      validate:
+        with:
+          - provider: validation
+            inputs:
+              expression: '__self in ["opencode", "agy", "both"]'
+            message: "harness must be 'opencode', 'agy', or 'both'"
+
     default_config_dir:
       description: Default home-based OpenCode config path
       internal: true
@@ -104,6 +152,88 @@ spec:
             inputs:
               expression: "_.default_config_dir"
 
+    default_agy_config_dir:
+      description: Default home-based Antigravity (agy) config path
+      internal: true
+      type: string
+      resolve:
+        with:
+          - provider: cel
+            inputs:
+              expression: '(_.env_home != "" ? _.env_home : (_.env_userprofile != "" ? _.env_userprofile : ".")) + "/.gemini/config"'
+
+    agy_config_dir:
+      description: Destination directory for user-level Antigravity (agy) files (~/.gemini/config)
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: agy_config_dir
+          - provider: cel
+            inputs:
+              expression: "_.default_agy_config_dir"
+
+    install_gh:
+      description: Verify GitHub CLI (gh) is available and install it to user_bin_dir if missing
+      type: bool
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: install_gh
+          - provider: static
+            inputs:
+              value: true
+
+    gh_version:
+      description: Pinned GitHub CLI version installed when gh is missing
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: gh_version
+          - provider: static
+            inputs:
+              value: "2.106.0"
+
+    go_version:
+      description: Pinned Go toolchain version installed by --action install-go when Go 1.26+ is missing
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: go_version
+          - provider: static
+            inputs:
+              value: "1.26.11"
+
+    go_install_dir:
+      description: User-writable Go SDK directory used by --action install-go without sudo or admin rights
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: go_install_dir
+          - provider: cel
+            inputs:
+              expression: '(_.env_home != "" ? _.env_home : (_.env_userprofile != "" ? _.env_userprofile : ".")) + "/.local/go"'
+
+    user_bin_dir:
+      description: User-writable binary directory when installing missing CLI tools without sudo
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: user_bin_dir
+          - provider: cel
+            inputs:
+              expression: '(_.env_home != "" ? _.env_home : (_.env_userprofile != "" ? _.env_userprofile : ".")) + "/.local/bin"'
+
     profile:
       description: OpenCode configuration template to install (cloud or ollama-hybrid)
       type: string
@@ -121,6 +251,72 @@ spec:
             inputs:
               expression: '__self in ["cloud", "ollama-hybrid"]'
             message: "profile must be 'cloud' or 'ollama-hybrid'"
+
+    overwrite:
+      description: Refresh bundled skills/agents/commands/rules and OpenCode profile (.bak backups created) when true, while still preserving unrelated MCP servers in Antigravity mcp_config.json; when false (default), skip existing skill/agent/command files and non-destructively merge configs
+      type: bool
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: overwrite
+          - provider: static
+            inputs:
+              value: false
+
+    existing_opencode_json:
+      description: Check whether opencode.json already exists in config_dir
+      internal: true
+      resolve:
+        with:
+          - provider: file
+            when:
+              expr: '_.harness in ["opencode", "both"]'
+            inputs:
+              operation: exists
+              path:
+                expr: '_.config_dir + "/opencode.json"'
+          - provider: static
+            inputs:
+              value:
+                exists: false
+
+    existing_opencode_jsonc:
+      description: Check whether opencode.jsonc already exists in config_dir
+      internal: true
+      resolve:
+        with:
+          - provider: file
+            when:
+              expr: '_.harness in ["opencode", "both"]'
+            inputs:
+              operation: exists
+              path:
+                expr: '_.config_dir + "/opencode.jsonc"'
+          - provider: static
+            inputs:
+              value:
+                exists: false
+
+    has_existing_config:
+      description: True when either opencode.json or opencode.jsonc already exists in config_dir
+      internal: true
+      type: bool
+      resolve:
+        with:
+          - provider: cel
+            inputs:
+              expression: "_.existing_opencode_json.exists || _.existing_opencode_jsonc.exists"
+
+    target_config_filename:
+      description: Active config filename to write or merge in place (updates opencode.json when present and opencode.jsonc is absent so stale opencode.json is never shadowed; otherwise opencode.jsonc)
+      internal: true
+      type: string
+      resolve:
+        with:
+          - provider: cel
+            inputs:
+              expression: '(!_.existing_opencode_jsonc.exists && _.existing_opencode_json.exists) ? "opencode.json" : "opencode.jsonc"'
 
     repo_dir:
       description: Target repository directory for init-repo
@@ -187,6 +383,42 @@ spec:
           - provider: static
             inputs:
               value: true
+
+    issue_tracker:
+      description: Issue tracking mechanism rendered into AGENTS.md (github, jira, local, jira+github, or github+local)
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: issue_tracker
+          - provider: static
+            inputs:
+              value: "github"
+      validate:
+        with:
+          - provider: validation
+            inputs:
+              expression: '__self in ["github", "jira", "local", "jira+github", "github+local"]'
+            message: "issue_tracker must be one of: github, jira, local, jira+github, github+local"
+
+    jira_project:
+      description: Optional Jira project key rendered into AGENTS.md when issue_tracker includes jira
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: jira_project
+          - provider: static
+            inputs:
+              value: "PROJ"
+      validate:
+        with:
+          - provider: validation
+            inputs:
+              match: '^[A-Z][A-Z0-9_]*$'
+            message: "jira_project must be an uppercase Jira project key (for example, PROJ or PLAT)"
 
     owner:
       description: GitHub organization or user login for configure-github
@@ -320,8 +552,65 @@ spec:
             inputs:
               expression: '_.user_tree.entries.filter(e, !e.path.startsWith("opencode."))'
 
+    opencode_files:
+      description: Structured directory tree of user-level OpenCode files installed into ~/.config/opencode (view with -o tree)
+      resolve:
+        with:
+          - provider: go-template
+            inputs:
+              operation: render
+              name: opencode-files-tree
+              template: |
+                {
+                  "opencode.jsonc": "model routing & MCP servers",
+                  "THIRD-PARTY-NOTICE.txt": "MIT skill notices",
+                  "instructions/": {
+                    {{- $first := true -}}
+                    {{- range .entries -}}
+                      {{- if hasPrefix "instructions/" .path -}}
+                        {{- if not $first }},{{ end -}}{{- $first = false -}}
+                        {{ printf "%q" .name }}: "standing policy"
+                      {{- end -}}
+                    {{- end -}}
+                  },
+                  "agents/": {
+                    {{- $first = true -}}
+                    {{- range .entries -}}
+                      {{- if hasPrefix "agents/" .path -}}
+                        {{- if not $first }},{{ end -}}{{- $first = false -}}
+                        {{ printf "%q" .name }}: "subagent"
+                      {{- end -}}
+                    {{- end -}}
+                  },
+                  "commands/": {
+                    {{- $first = true -}}
+                    {{- range .entries -}}
+                      {{- if hasPrefix "commands/" .path -}}
+                        {{- if not $first }},{{ end -}}{{- $first = false -}}
+                        {{ printf "%q" .name }}: "slash command"
+                      {{- end -}}
+                    {{- end -}}
+                  },
+                  "skills/": {
+                    {{- $first = true -}}
+                    {{- range .entries -}}
+                      {{- if hasPrefix "skills/" .path -}}
+                        {{- if not $first }},{{ end -}}{{- $first = false -}}
+                        {{ printf "%q" (trimPrefix "skills/" .path) }}: {{ if hasSuffix "SKILL.md" .name }}"skill"{{ else }}"template"{{ end }}
+                      {{- end -}}
+                    {{- end -}}
+                  }
+                }
+              data:
+                rslvr: user_tree
+      transform:
+        with:
+          - provider: cel
+            inputs:
+              expression: "json.unmarshal(__self)"
+
     selected_opencode_config:
-      description: Selected opencode.jsonc content matching profile and resolved config_dir
+      description: Selected opencode.jsonc content matching profile and resolved config_dir (safe for Windows backslash paths)
       internal: true
       type: string
       resolve:
@@ -339,7 +628,367 @@ spec:
               expression: |
                 _.config_dir == _.default_config_dir
                   ? __self.content
-                  : __self.content.replace("~/.config/opencode/instructions/workflow-policy.md", _.config_dir + "/instructions/workflow-policy.md")
+                  : __self.content.replace(
+                      "\"~/.config/opencode/instructions/workflow-policy.md\"",
+                      json.marshal(_.config_dir.replace("\\", "/") + "/instructions/workflow-policy.md")
+                    )
+
+    starter_config_object:
+      description: Parsed starter OpenCode config map (JSONC comments and trailing commas stripped safely)
+      internal: true
+      resolve:
+        with:
+          - provider: cel
+            inputs:
+              expression: |
+                json.unmarshal(
+                  regex.replace(
+                    regex.replace(_.selected_opencode_config, "(\"(?:\\\\.|[^\"\\\\])*\")|//[^\\r\\n]*|/\\*[\\s\\S]*?\\*/", "$1"),
+                    "(\"(?:\\\\.|[^\"\\\\])*\")|,([ \\t\\r\\n]*[}\\]])",
+                    "$1$2"
+                  )
+                )
+
+    existing_config_object:
+      description: Multi-step resolver reading and parsing an existing opencode.json or opencode.jsonc when present
+      internal: true
+      resolve:
+        with:
+          - provider: file
+            when:
+              expr: '_.harness in ["opencode", "both"] && _.has_existing_config && !_.overwrite'
+            inputs:
+              operation: read
+              path:
+                expr: '_.config_dir + "/" + _.target_config_filename'
+          - provider: static
+            inputs:
+              value:
+                content: "{}"
+      transform:
+        with:
+          - provider: cel
+            inputs:
+              expression: |
+                regex.replace(
+                  regex.replace(__self.content.replace("\ufeff", ""), "(\"(?:\\\\.|[^\"\\\\])*\")|//[^\\r\\n]*|/\\*[\\s\\S]*?\\*/", "$1"),
+                  "(\"(?:\\\\.|[^\"\\\\])*\")|,([ \\t\\r\\n]*[}\\]])",
+                  "$1$2"
+                ).trim()
+          - provider: cel
+            inputs:
+              expression: 'size(__self) == 0 ? {} : cel.bind(parsed, json.unmarshal(__self), parsed != null ? parsed : {})'
+
+    merged_opencode_config:
+      description: Fresh commented opencode.jsonc on clean installs, strict JSON when overwriting opencode.json, or non-destructively CEL-merged JSON preserving existing user models, providers, agents, and plugins
+      internal: true
+      type: string
+      resolve:
+        with:
+          - provider: cel
+            inputs:
+              expression: |
+                (!_.has_existing_config || _.overwrite)
+                  ? (_.target_config_filename == "opencode.json"
+                      ? json.marshalPretty(_.starter_config_object) + "\n"
+                      : _.selected_opencode_config)
+                  : json.marshalPretty(
+                      map.merge(
+                        _.existing_config_object,
+                        map.merge(
+                          ("providers" in _.starter_config_object
+                            ? {
+                                "providers": map.merge(
+                                  _.starter_config_object.providers,
+                                  ("providers" in _.existing_config_object && _.existing_config_object.providers != null ? _.existing_config_object.providers : {})
+                                )
+                              }
+                            : {}),
+                          {
+                            "$schema": ("$schema" in _.existing_config_object && _.existing_config_object["$schema"] != null)
+                              ? _.existing_config_object["$schema"]
+                              : _.starter_config_object["$schema"],
+                            "model": ("model" in _.existing_config_object && _.existing_config_object.model != null)
+                              ? _.existing_config_object.model
+                              : _.starter_config_object["model"],
+                            "instructions": (
+                              ("instructions" in _.existing_config_object && _.existing_config_object.instructions != null ? _.existing_config_object.instructions : []) +
+                              _.starter_config_object.instructions.filter(i, !(i in ("instructions" in _.existing_config_object && _.existing_config_object.instructions != null ? _.existing_config_object.instructions : [])))
+                            ),
+                            "mcp": map.merge(
+                              ("mcp" in _.existing_config_object && _.existing_config_object.mcp != null ? _.existing_config_object.mcp : {}),
+                              {
+                                "servers": map.merge(
+                                  _.starter_config_object.mcp.servers,
+                                  ("mcp" in _.existing_config_object && _.existing_config_object.mcp != null && "servers" in _.existing_config_object.mcp && _.existing_config_object.mcp.servers != null ? _.existing_config_object.mcp.servers : {})
+                                )
+                              }
+                            ),
+                            "permissions": (
+                              !("permissions" in _.existing_config_object) || _.existing_config_object.permissions == null || size(_.existing_config_object.permissions) == 0
+                                ? _.starter_config_object.permissions
+                                : _.existing_config_object.permissions + _.starter_config_object.permissions.filter(sp,
+                                    sp.resource != "*" &&
+                                    !(_.existing_config_object.permissions.exists(ep, ep.action == sp.action && ep.resource == sp.resource))
+                                  )
+                            )
+                          }
+                        )
+                      )
+                    ) + "\n"
+
+    agy_artifacts:
+      description: Single-source CEL conversion of bundled skills, role agents, commands, standing rules, and MIT notices into Antigravity (agy) ~/.gemini/config entries
+      internal: true
+      resolve:
+        with:
+          - provider: cel
+            inputs:
+              expression: |
+                cel.bind(
+                  entries,
+                  _.user_tree.entries,
+                  cel.bind(
+                    domainEntries,
+                    entries
+                      .filter(e, e.path.startsWith("skills/"))
+                      .map(e, {
+                        "path": regex.replace(e.path, "^skills/", ""),
+                        "content": e.content
+                          .replace("parallel `task` calls", "parallel `invoke_subagent` calls")
+                          .replace("Use the Task tool to invoke", "Use `invoke_subagent` to invoke")
+                          .replace("agent start --kind opencode", "agent start --kind agy")
+                          .replace("NEW opencode session", "NEW agy session")
+                      }),
+                    cel.bind(
+                      domainSkillNames,
+                      entries
+                        .filter(e, e.path.startsWith("skills/") && e.name == "SKILL.md")
+                        .map(e, regex.replace(e.path, "^skills/([^/]+)/SKILL\\.md$", "$1")),
+                      cel.bind(
+                        readOnlyAgents,
+                        ["planner", "code-reviewer", "artifact-auditor", "security-auditor"],
+                        cel.bind(
+                          parsedAgents,
+                          entries
+                            .filter(e, e.path.startsWith("agents/") && e.path.endsWith(".md"))
+                            .map(e, cel.bind(
+                              stem,
+                              regex.replace(e.name, "\\.md$", ""),
+                              cel.bind(
+                                hasFm,
+                                regex.match("(?s)^---\\r?\\n(?:.*?\\r?\\n)?---(?:\\r?\\n|$)", e.content),
+                                cel.bind(
+                                  rawMeta,
+                                  hasFm ? yaml.unmarshal(regex.replace(e.content, "(?s)^---\\r?\\n(?:(.*?)\\r?\\n)?---(?:\\r?\\n.*|$)", "$1")) : {},
+                                  cel.bind(
+                                    meta,
+                                    rawMeta != null ? rawMeta : {},
+                                    cel.bind(
+                                      body,
+                                      (hasFm ? regex.replace(e.content, "(?s)^---\\r?\\n(?:.*?\\r?\\n)?---\\r?\\n?(.*)$", "$1") : e.content)
+                                        .trim()
+                                        .replace("parallel `task` calls", "parallel `invoke_subagent` calls")
+                                        .replace("Use the Task tool to invoke", "Use `invoke_subagent` to invoke")
+                                        .replace("agent start --kind opencode", "agent start --kind agy")
+                                        .replace("NEW opencode session", "NEW agy session"),
+                                      {
+                                        "stem": stem,
+                                        "desc": "description" in meta && meta.description != null ? string(meta.description) : "Use for " + stem + " workflows.",
+                                        "heading": strings.title(stem.replace("-", " ")),
+                                        "body": body,
+                                        "mainAgent": stem == "waiter" ? "false" : "true",
+                                        "tools": stem == "waiter"
+                                          ? "[read_file, run_command, manage_task]"
+                                          : (stem in readOnlyAgents
+                                              ? "[read_file, run_command, manage_task, search_web]"
+                                              : "[read_file, edit_file, write_file, run_command, manage_task, search_web, invoke_subagent]")
+                                      }
+                                    )
+                                  )
+                                )
+                              )
+                            )),
+                          cel.bind(
+                            agentSkillCandidates,
+                            parsedAgents.filter(a, !(a.stem in domainSkillNames)),
+                            cel.bind(
+                              agentSkillEntries,
+                              agentSkillCandidates.map(a, {
+                                "path": a.stem + "/SKILL.md",
+                                "content": "---\nname: " + a.stem + "\ndescription: " + json.marshal(a.desc) + "\n---\n\n" + (
+                                  a.body.startsWith("# ") ? a.body : "# " + a.heading + "\n\n" + a.body
+                                ) + "\n"
+                              }),
+                              cel.bind(
+                                agentTreeEntries,
+                                parsedAgents.map(a, {
+                                  "path": a.stem + "/agent.md",
+                                  "content": "---\nname: " + a.stem + "\ndescription: " + json.marshal(a.desc) + "\nsubagent: true\nmainAgent: " + a.mainAgent + "\ntools: " + a.tools + "\n---\n\n" + a.body + "\n"
+                                }),
+                                cel.bind(
+                                  takenSkillNames,
+                                  domainSkillNames + agentSkillCandidates.map(a, a.stem),
+                                  cel.bind(
+                                    commandSkillEntries,
+                                    entries
+                                      .filter(e, e.path.startsWith("commands/") && e.path.endsWith(".md"))
+                                      .map(e, cel.bind(
+                                        stem,
+                                        regex.replace(e.name, "\\.md$", ""),
+                                        {
+                                          "stem": stem,
+                                          "skillName": stem == "plan" ? "triage-plan" : stem,
+                                          "raw": e.content
+                                        }
+                                      ))
+                                      .filter(c, !(c.skillName in takenSkillNames))
+                                      .map(c, cel.bind(
+                                        hasFm,
+                                        regex.match("(?s)^---\\r?\\n(?:.*?\\r?\\n)?---(?:\\r?\\n|$)", c.raw),
+                                        cel.bind(
+                                          rawMeta,
+                                          hasFm ? yaml.unmarshal(regex.replace(c.raw, "(?s)^---\\r?\\n(?:(.*?)\\r?\\n)?---(?:\\r?\\n.*|$)", "$1")) : {},
+                                          cel.bind(
+                                            meta,
+                                            rawMeta != null ? rawMeta : {},
+                                            cel.bind(
+                                              bodyRaw,
+                                              (hasFm ? regex.replace(c.raw, "(?s)^---\\r?\\n(?:.*?\\r?\\n)?---\\r?\\n?(.*)$", "$1") : c.raw)
+                                                .trim()
+                                                .replace("$ARGUMENTS", "<user request / arguments>")
+                                                .replace("parallel `task` calls", "parallel `invoke_subagent` calls"),
+                                              cel.bind(
+                                                targetAgent,
+                                                "agent" in meta && meta.agent != null ? string(meta.agent) : "",
+                                                {
+                                                  "path": c.skillName + "/SKILL.md",
+                                                  "content": "---\nname: " + c.skillName + "\ndescription: " + json.marshal("description" in meta && meta.description != null ? string(meta.description) : "Use when running the /" + c.skillName + " workflow.") + "\n---\n\n# " + strings.title(c.skillName.replace("-", " ")) + "\n\n" + (
+                                                    targetAgent != "" && (targetAgent in parsedAgents.map(a, a.stem))
+                                                      ? "Delegate to the `" + targetAgent + "` subagent (via `invoke_subagent`) or load the `" + targetAgent + "` skill and follow its full procedure:\n\n" + bodyRaw
+                                                      : bodyRaw
+                                                  ) + "\n"
+                                                }
+                                              )
+                                            )
+                                          )
+                                        )
+                                      )),
+                                    cel.bind(
+                                      ruleTreeEntries,
+                                      entries
+                                        .filter(e, e.path.startsWith("instructions/"))
+                                        .map(e, {
+                                          "path": regex.replace(e.path, "^instructions/", ""),
+                                          "content": e.content
+                                        }),
+                                      cel.bind(
+                                        noticeEntries,
+                                        entries
+                                          .filter(e, e.path == "THIRD-PARTY-NOTICE.txt")
+                                          .map(e, {"path": e.path, "content": e.content}),
+                                        {
+                                          "skillTreeEntries": domainEntries + agentSkillEntries + commandSkillEntries,
+                                          "agentTreeEntries": agentTreeEntries,
+                                          "ruleTreeEntries": ruleTreeEntries,
+                                          "noticeTreeEntries": noticeEntries,
+                                          "skillCount": size(domainSkillNames) + size(agentSkillEntries) + size(commandSkillEntries),
+                                          "agentCount": size(agentTreeEntries)
+                                        }
+                                      )
+                                    )
+                                  )
+                                )
+                              )
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+
+    existing_agy_mcp:
+      description: Check whether mcp_config.json already exists in agy_config_dir
+      internal: true
+      resolve:
+        with:
+          - provider: file
+            when:
+              expr: '_.harness in ["agy", "both"]'
+            inputs:
+              operation: exists
+              path:
+                expr: '_.agy_config_dir + "/mcp_config.json"'
+          - provider: static
+            inputs:
+              value:
+                exists: false
+
+    existing_agy_mcp_object:
+      description: Multi-step resolver reading and parsing an existing Antigravity mcp_config.json whenever present (even when overwrite=true so unrelated user MCP servers are never wiped)
+      internal: true
+      resolve:
+        with:
+          - provider: file
+            when:
+              expr: '_.harness in ["agy", "both"] && _.existing_agy_mcp.exists'
+            inputs:
+              operation: read
+              path:
+                expr: '_.agy_config_dir + "/mcp_config.json"'
+          - provider: static
+            inputs:
+              value:
+                content: "{}"
+      transform:
+        with:
+          - provider: cel
+            inputs:
+              expression: |
+                regex.replace(
+                  regex.replace(__self.content.replace("\ufeff", ""), "(\"(?:\\\\.|[^\"\\\\])*\")|//[^\\r\\n]*|/\\*[\\s\\S]*?\\*/", "$1"),
+                  "(\"(?:\\\\.|[^\"\\\\])*\")|,([ \\t\\r\\n]*[}\\]])",
+                  "$1$2"
+                ).trim()
+          - provider: cel
+            inputs:
+              expression: 'size(__self) == 0 ? {} : cel.bind(parsed, json.unmarshal(__self), parsed != null ? parsed : {})'
+
+    merged_agy_mcp_config:
+      description: Non-destructively CEL-merged Antigravity mcp_config.json preserving existing MCP servers while registering scafctl
+      internal: true
+      type: string
+      resolve:
+        with:
+          - provider: cel
+            inputs:
+              expression: |
+                cel.bind(
+                  existingServers,
+                  ("mcpServers" in _.existing_agy_mcp_object && _.existing_agy_mcp_object.mcpServers != null)
+                    ? _.existing_agy_mcp_object.mcpServers
+                    : {},
+                  cel.bind(
+                    scafctlEntry,
+                    {
+                      "scafctl": {
+                        "command": "scafctl",
+                        "args": ["mcp", "serve"]
+                      }
+                    },
+                    json.marshalPretty(
+                      map.merge(
+                        _.existing_agy_mcp_object,
+                        {
+                          "mcpServers": _.overwrite
+                            ? map.merge(existingServers, scafctlEntry)
+                            : map.merge(scafctlEntry, existingServers)
+                        }
+                      )
+                    ) + "\n"
+                  )
+                )
 
     go_ci_source:
       description: Portable Go CI actions.yaml bundled under go-ci/actions.yaml
@@ -380,14 +1029,18 @@ spec:
                     "project_name": _.project_name,
                     "module_name": _.module_name,
                     "min_coverage": _.min_coverage,
-                    "include_go_ci": _.include_go_ci && _.go_ci_source.content != ""
+                    "include_go_ci": _.include_go_ci && _.go_ci_source.content != "",
+                    "issue_tracker": _.issue_tracker,
+                    "jira_project": _.jira_project
                   }
 
   workflow:
     actions:
       write-user-tree:
-        displayName: Write User Skills, Agents & Commands
-        description: Copy agnostic OpenCode skills, agents, commands, and instructions into config_dir
+        displayName: Write User Skills, Agents & Commands (OpenCode)
+        description: Copy agnostic OpenCode skills, agents, commands, and instructions into config_dir (skipping existing files unless overwrite=true)
+        when:
+          expr: '_.harness in ["opencode", "both"]'
         provider: file
         inputs:
           operation: write-tree
@@ -395,39 +1048,325 @@ spec:
             rslvr: config_dir
           entries:
             rslvr: user_shared_entries
-          onConflict: skip-unchanged
+          onConflict:
+            expr: '_.overwrite ? "skip-unchanged" : "skip"'
           backup: true
           permissions: "0644"
 
       write-user-config:
-        displayName: Write User opencode.jsonc
-        description: Write the selected OpenCode profile (cloud or ollama-hybrid) to opencode.jsonc
+        displayName: Write or Merge User OpenCode Config
+        description: Write opencode.jsonc on fresh installs, or non-destructively CEL-merge instructions, scafctl MCP, and safety permissions into an existing opencode.json / opencode.jsonc (with .bak backup)
+        when:
+          expr: '_.harness in ["opencode", "both"]'
         dependsOn:
           - write-user-tree
         provider: file
         inputs:
           operation: write
           path:
-            expr: '_.config_dir + "/opencode.jsonc"'
+            expr: '_.config_dir + "/" + _.target_config_filename'
           content:
-            rslvr: selected_opencode_config
+            rslvr: merged_opencode_config
           createDirs: true
           onConflict: skip-unchanged
           backup: true
           permissions: "0600"
 
+      write-agy-skills:
+        displayName: Write Antigravity Skills (Domain + Role + Command)
+        description: Install domain skills plus CEL-converted companion agent and command skills into ~/.gemini/config/skills
+        when:
+          expr: '_.harness in ["agy", "both"]'
+        provider: file
+        inputs:
+          operation: write-tree
+          basePath:
+            expr: '_.agy_config_dir + "/skills"'
+          entries:
+            expr: "_.agy_artifacts.skillTreeEntries"
+          onConflict:
+            expr: '_.overwrite ? "skip-unchanged" : "skip"'
+          backup: true
+          permissions: "0644"
+
+      write-agy-agents:
+        displayName: Write Antigravity Custom Subagents
+        description: Install converted subagent definitions into ~/.gemini/config/agents
+        when:
+          expr: '_.harness in ["agy", "both"]'
+        provider: file
+        inputs:
+          operation: write-tree
+          basePath:
+            expr: '_.agy_config_dir + "/agents"'
+          entries:
+            expr: "_.agy_artifacts.agentTreeEntries"
+          onConflict:
+            expr: '_.overwrite ? "skip-unchanged" : "skip"'
+          backup: true
+          permissions: "0644"
+
+      write-agy-rules:
+        displayName: Write Antigravity Standing Rules
+        description: Install workflow-policy.md into ~/.gemini/config/rules
+        when:
+          expr: '_.harness in ["agy", "both"]'
+        provider: file
+        inputs:
+          operation: write-tree
+          basePath:
+            expr: '_.agy_config_dir + "/rules"'
+          entries:
+            expr: "_.agy_artifacts.ruleTreeEntries"
+          onConflict:
+            expr: '_.overwrite ? "skip-unchanged" : "skip"'
+          backup: true
+          permissions: "0644"
+
+      write-agy-notice:
+        displayName: Write Antigravity Third-Party MIT Notices
+        description: Install THIRD-PARTY-NOTICE.txt into ~/.gemini/config so adapted MIT skills carry required license notices
+        when:
+          expr: '_.harness in ["agy", "both"]'
+        provider: file
+        inputs:
+          operation: write-tree
+          basePath:
+            rslvr: agy_config_dir
+          entries:
+            expr: "_.agy_artifacts.noticeTreeEntries"
+          onConflict: skip-unchanged
+          backup: true
+          permissions: "0644"
+
+      write-agy-mcp:
+        displayName: Write or Merge Antigravity MCP Config
+        description: Non-destructively register scafctl mcp serve inside ~/.gemini/config/mcp_config.json (with .bak backup)
+        when:
+          expr: '_.harness in ["agy", "both"]'
+        dependsOn:
+          - write-agy-skills
+          - write-agy-agents
+          - write-agy-rules
+          - write-agy-notice
+        provider: file
+        inputs:
+          operation: write
+          path:
+            expr: '_.agy_config_dir + "/mcp_config.json"'
+          content:
+            rslvr: merged_agy_mcp_config
+          createDirs: true
+          onConflict: skip-unchanged
+          backup: true
+          permissions: "0600"
+
+      ensure-gh-cli:
+        displayName: Ensure GitHub CLI (gh)
+        description: Verify gh CLI is installed for GitHub issues/PRs and install to user_bin_dir if missing
+        when:
+          expr: "_.install_gh"
+        provider: exec
+        timeout: 5m
+        inputs:
+          passthrough: true
+          env:
+            TARGET_OS:
+              expr: "_.platform.os"
+            TARGET_ARCH:
+              expr: "_.platform.arch"
+            GH_VERSION:
+              rslvr: gh_version
+            USER_BIN_DIR:
+              rslvr: user_bin_dir
+          command: |
+            set -e
+            NL="$(printf '\nx')"
+            NL="${NL%x}"
+            CR="$(printf '\r')"
+            EXE_EXT=""
+            if [ "$TARGET_OS" = "windows" ]; then
+              EXE_EXT=".exe"
+            fi
+            if command -v gh >/dev/null 2>&1; then
+              GH_VER_RAW="$(gh --version 2>/dev/null || true)"
+              GH_FIRST_LINE="${GH_VER_RAW%%"$NL"*}"
+              GH_FIRST_LINE="${GH_FIRST_LINE%"$CR"}"
+              echo "gh CLI already available: ${GH_FIRST_LINE}"
+              exit 0
+            fi
+            if [ -x "${USER_BIN_DIR}/gh${EXE_EXT}" ]; then
+              echo "gh CLI already installed at ${USER_BIN_DIR}/gh${EXE_EXT}"
+              exit 0
+            fi
+            echo "Installing GitHub CLI (gh v${GH_VERSION}) for ${TARGET_OS}/${TARGET_ARCH} into ${USER_BIN_DIR}..."
+            mkdir -p "$USER_BIN_DIR"
+            (
+              TMP_DIR="$(mktemp -d)"
+              trap 'rm -rf "$TMP_DIR"' EXIT
+              if [ "$TARGET_OS" = "linux" ]; then
+                ARCHIVE="gh_${GH_VERSION}_linux_${TARGET_ARCH}.tar.gz"
+                URL="https://github.com/cli/cli/releases/download/v${GH_VERSION}/${ARCHIVE}"
+                curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                cp "${TMP_DIR}/gh_${GH_VERSION}_linux_${TARGET_ARCH}/bin/gh" "${USER_BIN_DIR}/gh"
+                chmod +x "${USER_BIN_DIR}/gh"
+              elif [ "$TARGET_OS" = "darwin" ]; then
+                ARCHIVE="gh_${GH_VERSION}_macOS_${TARGET_ARCH}.zip"
+                URL="https://github.com/cli/cli/releases/download/v${GH_VERSION}/${ARCHIVE}"
+                curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                unzip -q "${TMP_DIR}/${ARCHIVE}" -d "$TMP_DIR"
+                cp "${TMP_DIR}/gh_${GH_VERSION}_macOS_${TARGET_ARCH}/bin/gh" "${USER_BIN_DIR}/gh"
+                chmod +x "${USER_BIN_DIR}/gh"
+              elif [ "$TARGET_OS" = "windows" ]; then
+                ARCHIVE="gh_${GH_VERSION}_windows_${TARGET_ARCH}.zip"
+                URL="https://github.com/cli/cli/releases/download/v${GH_VERSION}/${ARCHIVE}"
+                curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                if command -v tar.exe >/dev/null 2>&1; then
+                  tar.exe -xf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                else
+                  ARCHIVE_PATH="${TMP_DIR}/${ARCHIVE}" DEST_DIR="$TMP_DIR" powershell.exe -NoProfile -Command 'Expand-Archive -LiteralPath $env:ARCHIVE_PATH -DestinationPath $env:DEST_DIR -Force'
+                fi
+                FIND_GH="$(find "$TMP_DIR" -name "gh.exe" -type f)"
+                GH_BIN="${FIND_GH%%"$NL"*}"
+                GH_BIN="${GH_BIN%"$CR"}"
+                if [ -z "$GH_BIN" ]; then
+                  echo "gh.exe not found inside extracted archive" >&2
+                  exit 1
+                fi
+                cp "$GH_BIN" "${USER_BIN_DIR}/gh.exe"
+              else
+                echo "Unsupported operating system for gh installer: ${TARGET_OS}" >&2
+                exit 1
+              fi
+            )
+            echo "Installed gh to ${USER_BIN_DIR}/gh${EXE_EXT} (ensure ${USER_BIN_DIR} is on PATH and run 'gh auth login' for GitHub issues/PRs)."
+
       install-user:
-        displayName: Install User OpenCode Setup
-        description: Install personal OpenCode skills, agents, commands, and opencode.jsonc with .bak backups
+        displayName: Install User AI Harness Setup
+        description: Install personal OpenCode and/or Antigravity (agy) skills, subagents, rules, merged MCP config, and gh CLI safely
         dependsOn:
           - write-user-config
+          - write-agy-mcp
+          - ensure-gh-cli
         provider: static
         inputs:
           value:
+            harness:
+              rslvr: harness
             installed_to:
-              rslvr: config_dir
+              expr: '_.harness in ["opencode", "both"] ? _.config_dir : ""'
+            config_file:
+              expr: '_.harness in ["opencode", "both"] ? _.target_config_filename : ""'
+            merged_into_existing:
+              expr: '_.harness in ["opencode", "both"] && _.has_existing_config && !_.overwrite'
             profile:
               rslvr: profile
+            agy_installed_to:
+              expr: '_.harness in ["agy", "both"] ? _.agy_config_dir : ""'
+            agy_skill_count:
+              expr: '_.harness in ["agy", "both"] ? _.agy_artifacts.skillCount : 0'
+            agy_agent_count:
+              expr: '_.harness in ["agy", "both"] ? _.agy_artifacts.agentCount : 0'
+            agy_merged_mcp:
+              expr: '_.harness in ["agy", "both"] && _.existing_agy_mcp.exists'
+
+      install-go:
+        displayName: Ensure Go 1.26+ Toolchain
+        description: Verify Go 1.26+ is available or install it into go_install_dir across Linux, macOS, and Windows without sudo/admin
+        explicit: true
+        provider: exec
+        timeout: 10m
+        inputs:
+          passthrough: true
+          env:
+            TARGET_OS:
+              expr: "_.platform.os"
+            TARGET_ARCH:
+              expr: "_.platform.arch"
+            GO_VERSION:
+              rslvr: go_version
+            GO_INSTALL_DIR:
+              rslvr: go_install_dir
+            USER_BIN_DIR:
+              rslvr: user_bin_dir
+          command: |
+            set -e
+            CR="$(printf '\r')"
+            PATH_SEP=":"
+            EXE_EXT=""
+            if [ "$TARGET_OS" = "windows" ]; then
+              PATH_SEP=";"
+              EXE_EXT=".exe"
+            fi
+            export PATH="${GO_INSTALL_DIR}/bin${PATH_SEP}${USER_BIN_DIR}${PATH_SEP}${PATH}"
+
+            REQ_REST="${GO_VERSION#1.}"
+            REQ_MINOR="${REQ_REST%%[!0-9]*}"
+            if [ -z "$REQ_MINOR" ]; then
+              REQ_MINOR="26"
+            fi
+
+            if command -v go >/dev/null 2>&1; then
+              GV="$(go env GOVERSION 2>/dev/null || true)"
+              GV="${GV%"$CR"}"
+              case "$GV" in
+                go1.*)
+                  REST="${GV#go1.}"
+                  MINOR="${REST%%[!0-9]*}"
+                  if [ -n "$MINOR" ] && [ "$MINOR" -ge "$REQ_MINOR" ]; then
+                    echo "Go 1.${REQ_MINOR}+ already available: $(go version)"
+                    exit 0
+                  fi
+                  ;;
+              esac
+            fi
+
+            echo "Installing Go v${GO_VERSION} for ${TARGET_OS}/${TARGET_ARCH} into ${GO_INSTALL_DIR}..."
+            mkdir -p "$USER_BIN_DIR"
+            PARENT_DIR="${GO_INSTALL_DIR%[/\\]*}"
+            if [ -n "$PARENT_DIR" ] && [ "$PARENT_DIR" != "$GO_INSTALL_DIR" ]; then
+              mkdir -p "$PARENT_DIR"
+            fi
+            (
+              TMP_DIR="$(mktemp -d)"
+              trap 'rm -rf "$TMP_DIR"' EXIT
+              if [ "$TARGET_OS" = "windows" ]; then
+                ARCHIVE="go${GO_VERSION}.windows-${TARGET_ARCH}.zip"
+                URL="https://go.dev/dl/${ARCHIVE}"
+                curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                if command -v tar.exe >/dev/null 2>&1; then
+                  tar.exe -xf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                else
+                  ARCHIVE_PATH="${TMP_DIR}/${ARCHIVE}" DEST_DIR="$TMP_DIR" powershell.exe -NoProfile -Command 'Expand-Archive -LiteralPath $env:ARCHIVE_PATH -DestinationPath $env:DEST_DIR -Force'
+                fi
+              else
+                ARCHIVE="go${GO_VERSION}.${TARGET_OS}-${TARGET_ARCH}.tar.gz"
+                URL="https://go.dev/dl/${ARCHIVE}"
+                curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+              fi
+              rm -rf "$GO_INSTALL_DIR"
+              mv "${TMP_DIR}/go" "$GO_INSTALL_DIR"
+            )
+            if [ "$TARGET_OS" != "windows" ]; then
+              ABS_GO_DIR="$(cd "$GO_INSTALL_DIR" && pwd)"
+              ln -sf "${ABS_GO_DIR}/bin/go" "${USER_BIN_DIR}/go"
+              ln -sf "${ABS_GO_DIR}/bin/gofmt" "${USER_BIN_DIR}/gofmt"
+              echo "Installed $("${ABS_GO_DIR}/bin/go" version) and linked go/gofmt into ${USER_BIN_DIR} (ensure ${USER_BIN_DIR} is on PATH)."
+            else
+              echo "Installed $("${GO_INSTALL_DIR}/bin/go${EXE_EXT}" version) into ${GO_INSTALL_DIR}\\bin."
+              echo "Add ${GO_INSTALL_DIR}\\bin to your Windows user PATH if not already present."
+            fi
+
+      list-files:
+        displayName: List Bundled OpenCode Files
+        description: Return the structured user-level OpenCode file tree
+        explicit: true
+        provider: static
+        inputs:
+          value:
+            rslvr: opencode_files
 
       write-repo-contracts:
         displayName: Write Repo AI Contracts
@@ -725,30 +1664,187 @@ spec:
         args: [-o, json]
         exitCode: 0
         assertions:
+          - expression: '__output.harness == "opencode"'
+            message: Default harness should be opencode
           - expression: '__output.profile == "cloud"'
             message: Default profile should be cloud
+          - expression: '__output.overwrite == false'
+            message: Default overwrite should be false
+          - expression: '__output.install_gh == true'
+            message: Default install_gh should be true
+          - expression: '__output.go_version == "1.26.11"'
+            message: Default go_version should be 1.26.11
+          - expression: '__output.issue_tracker == "github"'
+            message: Default issue_tracker should be github
+          - expression: '__output.jira_project == "PROJ"'
+            message: Default jira_project should be PROJ
           - expression: "__output.min_coverage == 70"
             message: Default min_coverage should be 70
 
-      scaffold-user-config:
+      windows-backslash-config-dir:
         extends: [_starter-files]
-        description: Run default solution workflow to install user-level OpenCode cloud profile into a sandboxed config_dir
-        command: [run, solution]
-        args: [-r, config_dir=./sandbox-opencode, -r, profile=cloud, -o, json]
+        description: Escape Windows backslash config_dir paths safely inside starter_config_object JSON
+        command: [run, resolver, starter_config_object]
+        args: [-r, 'config_dir=C:\Users\alice\opencode', -o, json]
         exitCode: 0
         assertions:
-          - expression: "size(__output) > 0"
-            message: Default solution workflow should emit non-empty structured output
+          - expression: '__output.starter_config_object.instructions[0] == "C:/Users/alice/opencode/instructions/workflow-policy.md"'
+            message: Windows backslash config_dir should normalize cleanly without invalid JSON escape errors
+
+      scaffold-user-config:
+        extends: [_starter-files]
+        description: Run default solution workflow to install user-level OpenCode cloud profile and verify ensure-gh-cli fast path
+        command: [run, solution]
+        args: [-r, config_dir=./sandbox-opencode, -r, profile=cloud, -r, install_gh=true, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: '__output.actions["install-user"].results.harness == "opencode"'
+            message: Default solution workflow should report opencode harness
+          - expression: '__output.actions["install-user"].results.agy_skill_count == 0'
+            message: OpenCode-only install should report 0 agy skills
 
       scaffold-user-ollama-profile:
         extends: [_starter-files]
         description: Run default solution workflow with ollama-hybrid profile into a sandboxed config_dir
         command: [run, solution]
-        args: [-r, config_dir=./sandbox-ollama, -r, profile=ollama-hybrid, -o, json]
+        args: [-r, config_dir=./sandbox-ollama, -r, profile=ollama-hybrid, -r, install_gh=false, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: '__output.actions["install-user"].results.profile == "ollama-hybrid"'
+            message: Solution workflow with ollama-hybrid should report ollama-hybrid profile
+
+      merge-existing-opencode-json:
+        extends: [_starter-files]
+        description: Non-destructively CEL-merge workflow-policy, scafctl MCP, ollama provider, and safety permissions into an existing opencode.json without altering user models
+        init:
+          - command: |
+              mkdir -p ./sandbox-existing
+              printf '{"model":"openai/custom-model","instructions":["~/custom.md"],"mcp":{"servers":{"playwright":{"type":"local","command":["npx","@playwright/mcp"]}}}}\n' > ./sandbox-existing/opencode.json
+        command: [run, resolver, merged_opencode_config, target_config_filename, has_existing_config]
+        args: [-r, config_dir=./sandbox-existing, -r, profile=ollama-hybrid, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: '__output.target_config_filename == "opencode.json"'
+            message: Existing opencode.json should be targeted in place rather than shadowed by opencode.jsonc
+          - expression: '__output.has_existing_config == true'
+            message: Existing opencode.json should be detected
+          - expression: 'json.unmarshal(__output.merged_opencode_config).model == "openai/custom-model"'
+            message: Merged config must preserve the user existing model
+          - expression: '"~/custom.md" in json.unmarshal(__output.merged_opencode_config).instructions && size(json.unmarshal(__output.merged_opencode_config).instructions) == 2'
+            message: Merged config must retain existing instructions and append workflow-policy.md
+          - expression: '"playwright" in json.unmarshal(__output.merged_opencode_config).mcp.servers && "scafctl" in json.unmarshal(__output.merged_opencode_config).mcp.servers'
+            message: Merged config must retain playwright MCP server while adding scafctl
+          - expression: '"ollama" in json.unmarshal(__output.merged_opencode_config).providers'
+            message: Merged ollama-hybrid config must include ollama provider definition
+
+      merge-existing-opencode-jsonc-comments:
+        extends: [_starter-files]
+        description: Safely strip JSONC line/block comments and trailing commas without corrupting URLs during CEL merge
+        init:
+          - command: |
+              mkdir -p ./sandbox-jsonc
+              cat <<'EOF' > ./sandbox-jsonc/opencode.jsonc
+              {
+                // Keep URL intact: https://mcp.atlassian.com/v2/mcp
+                "model": null,
+                /* multi-line
+                   comment */
+                "mcp": {
+                  "servers": {
+                    "atlassian": {
+                      "type": "remote",
+                      "url": "https://mcp.atlassian.com/v2/mcp",
+                    },
+                  },
+                },
+              }
+              EOF
+        command: [run, resolver, merged_opencode_config]
+        args: [-r, config_dir=./sandbox-jsonc, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: 'json.unmarshal(__output.merged_opencode_config).model == "anthropic/claude-sonnet-5-5"'
+            message: Null model in existing JSONC should fall back to starter model
+          - expression: 'json.unmarshal(__output.merged_opencode_config).mcp.servers.atlassian.url == "https://mcp.atlassian.com/v2/mcp"'
+            message: URLs containing // inside JSONC strings must remain intact
+
+      overwrite-existing-opencode-json:
+        extends: [_starter-files]
+        description: Overwrite an existing opencode.json in place with valid strict JSON rather than leaving stale opencode.json active alongside opencode.jsonc
+        init:
+          - command: |
+              mkdir -p ./sandbox-overwrite-json
+              printf '{"model":"openai/old-model"}\n' > ./sandbox-overwrite-json/opencode.json
+        command: [run, solution]
+        args: [-r, config_dir=./sandbox-overwrite-json, -r, profile=ollama-hybrid, -r, overwrite=true, -r, install_gh=false, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: '__output.actions["install-user"].results.config_file == "opencode.json"'
+            message: Overwrite should update opencode.json in place when opencode.jsonc does not exist
+          - expression: '__output.actions["install-user"].results.merged_into_existing == false'
+            message: Overwrite mode should report merged_into_existing == false
+
+      scaffold-agy-harness:
+        extends: [_starter-files]
+        description: Convert single-source skills, agents, commands, rules, and MIT notices into Antigravity (agy) without OpenCode files
+        command: [run, solution]
+        args: [-r, harness=agy, -r, agy_config_dir=./sandbox-agy, -r, install_gh=false, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: '__output.actions["install-user"].results.harness == "agy"'
+            message: Harness output should report agy
+          - expression: '__output.actions["install-user"].results.installed_to == ""'
+            message: Antigravity-only install should leave OpenCode installed_to empty
+          - expression: '__output.actions["install-user"].results.agy_skill_count == 36'
+            message: Antigravity install should export all 22 domain skills plus 9 role-agent skills and 5 standalone command skills
+          - expression: '__output.actions["install-user"].results.agy_agent_count == 11'
+            message: Antigravity install should export all 11 subagents
+
+      merge-existing-agy-mcp:
+        extends: [_starter-files]
+        description: Preserve unrelated MCP servers in Antigravity mcp_config.json even when overwrite=true is passed
+        init:
+          - command: |
+              mkdir -p ./sandbox-agy-existing
+              printf '{"mcpServers":{"playwright":{"command":"npx","args":["@playwright/mcp"]},"scafctl":{"command":"old-scafctl","args":["serve"]}}}\n' > ./sandbox-agy-existing/mcp_config.json
+        command: [run, resolver, merged_agy_mcp_config]
+        args: [-r, harness=both, -r, config_dir=./sandbox-both-opencode, -r, agy_config_dir=./sandbox-agy-existing, -r, overwrite=true, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: '"playwright" in json.unmarshal(__output.merged_agy_mcp_config).mcpServers'
+            message: Overwrite mode must never delete unrelated user MCP servers from mcp_config.json
+          - expression: 'json.unmarshal(__output.merged_agy_mcp_config).mcpServers.scafctl.command == "scafctl"'
+            message: Overwrite mode should refresh the scafctl MCP server entry
+
+      verify-list-files-action:
+        extends: [_starter-files]
+        description: Verify explicit list-files action returns structured bundled file tree
+        command: [run, solution]
+        args: [--action, list-files, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: '"skills/" in __output.actions["list-files"].results && "agents/" in __output.actions["list-files"].results'
+            message: list-files action should return structured skills and agents maps
+
+      reject-invalid-harness:
+        extends: [_starter-files]
+        description: Reject unsupported harness names
+        command: [run, resolver]
+        args: [-r, harness=unknown, --on-validation-error, error, -o, json]
+        exitCode: 2
+        assertions:
+          - expression: '__output.__status == "failed"'
+            message: Invalid harness should report failed validation status
+
+      verify-install-go-action:
+        extends: [_starter-files]
+        description: Verify explicit install-go action detects an existing Go 1.26+ toolchain cleanly
+        command: [run, solution]
+        args: [--action, install-go, -o, json]
         exitCode: 0
         assertions:
           - expression: "size(__output) > 0"
-            message: Default solution workflow with ollama-hybrid should emit non-empty structured output
+            message: install-go action should succeed and emit structured action output
 
       scaffold-repo-contracts:
         extends: [_starter-files]
@@ -769,8 +1865,56 @@ spec:
           - json
         exitCode: 0
         assertions:
-          - expression: "size(__output) > 0"
-            message: init-repo explicit action should emit non-empty structured output
+          - expression: '__output.actions["init-repo"].results.project_name == "payments-api"'
+            message: init-repo explicit action should report initialized project_name
+
+      scaffold-repo-jira-combo:
+        extends: [_starter-files]
+        description: Verify repo_template_tree renders Jira project key and combined tracker instructions into AGENTS.md
+        command: [run, resolver, repo_template_tree]
+        args:
+          - -r
+          - project_name=billing-api
+          - -r
+          - issue_tracker=jira+github
+          - -r
+          - jira_project=BILL
+          - -o
+          - json
+        exitCode: 0
+        assertions:
+          - expression: '__output.repo_template_tree.filter(e, e.path == "AGENTS.md.tmpl")[0].content.contains("BILL-<N>")'
+            message: Rendered AGENTS.md should embed the configured Jira project key
+
+      scaffold-repo-local-tracker:
+        extends: [_starter-files]
+        description: Verify repo_template_tree renders local Markdown issue instructions into AGENTS.md
+        command: [run, resolver, repo_template_tree]
+        args: [-r, issue_tracker=local, -o, json]
+        exitCode: 0
+        assertions:
+          - expression: '__output.repo_template_tree.filter(e, e.path == "AGENTS.md.tmpl")[0].content.contains("temp/issues/<NNN>-<slug>.md")'
+            message: Rendered AGENTS.md should document temp/issues/<NNN>-<slug>.md when issue_tracker=local
+
+      reject-invalid-issue-tracker:
+        extends: [_starter-files]
+        description: Reject unsupported issue_tracker values
+        command: [run, resolver]
+        args: [-r, issue_tracker=trello, --on-validation-error, error, -o, json]
+        exitCode: 2
+        assertions:
+          - expression: '__output.__status == "failed"'
+            message: Invalid issue_tracker should report failed validation status
+
+      reject-invalid-jira-project:
+        extends: [_starter-files]
+        description: Reject lowercase or malformed Jira project keys
+        command: [run, resolver]
+        args: [-r, jira_project=bad-key, --on-validation-error, error, -o, json]
+        exitCode: 2
+        assertions:
+          - expression: '__output.__status == "failed"'
+            message: Invalid jira_project should report failed validation status
 
       reject-invalid-profile:
         extends: [_starter-files]

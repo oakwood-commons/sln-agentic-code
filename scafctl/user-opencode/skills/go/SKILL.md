@@ -24,6 +24,6 @@ description: "Use when writing, editing, testing, or reviewing Go code, go.mod, 
 - Write table-driven subtests exercising observable behavior at public seams;
   avoid introducing external assertion libraries unless the repo already uses
   them.
-- Split large features into small, independently testable vertical slices. Do
+- Break large features into small, independently testable steps. Do
   not run `go mod tidy` reflexively unless dependencies actually changed.
 - Debugging: load `go-debug`. Benchmarks & profiling: load `go-perf`.

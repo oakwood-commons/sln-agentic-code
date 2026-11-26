@@ -21,7 +21,7 @@ locality for maintainers, and testability for everyone.
 - **Implementation** -- the body of code inside a module that hides complexity.
 - **Depth** -- leverage at the interface: the amount of useful behaviour a
   caller or test exercises per unit of interface they must learn.
-- **Seam** *(Michael Feathers)* -- a place where you can alter behaviour
+- **Seam** -- a place where you can alter behaviour
   without editing in that place; the location where a module's interface lives.
 - **Adapter** -- a concrete implementation satisfying an interface at a seam
   (for example, a real directory reader vs. an in-memory map reader).

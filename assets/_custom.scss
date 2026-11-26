@@ -237,6 +237,11 @@ body {
     padding: 1.25rem;
     text-align: center;
     overflow-x: auto;
+
+    svg {
+      max-width: 100%;
+      height: auto;
+    }
   }
 
   // Tabs
@@ -278,6 +283,30 @@ body {
     border-radius: 6px;
     padding: 1.65rem 1rem 1rem !important;
     overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(99, 162, 187, 0.32) transparent;
+
+    &::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background: rgba(99, 162, 187, 0.28);
+      border-radius: 999px;
+
+      &:hover {
+        background: rgba(0, 233, 242, 0.5);
+      }
+    }
+  }
+
+  pre:has(> code[data-lang="text"]) {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
   }
 
   pre code[data-lang]::before {
@@ -340,6 +369,423 @@ body {
 @media (hover: none) {
   .copy-button {
     opacity: 0.75;
+  }
+}
+
+// Interactive Bash | PowerShell code window toggle
+.bp-shell-toggle {
+  position: relative;
+  margin: 1rem 0;
+
+  .highlight {
+    margin: 0;
+
+    pre {
+      padding-top: 2.15rem !important;
+    }
+
+    pre code[data-lang]::before {
+      content: none;
+    }
+  }
+}
+
+.bp-shell-bar {
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: stretch;
+  background: rgba(6, 27, 48, 0.94);
+  border-bottom: 1px solid rgba(0, 233, 242, 0.22);
+  border-right: 1px solid rgba(0, 233, 242, 0.22);
+  border-top-left-radius: 5px;
+  border-bottom-right-radius: 6px;
+  overflow: hidden;
+}
+
+.bp-shell-btn {
+  appearance: none;
+  border: 0;
+  border-right: 1px solid rgba(67, 102, 123, 0.38);
+  padding: 3px 10px;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.66rem;
+  line-height: 1.65;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: $bp-muted;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+
+  &:last-child {
+    border-right: 0;
+  }
+
+  &:hover {
+    color: #ffffff;
+    background: rgba(0, 233, 242, 0.08);
+  }
+
+  &.is-active {
+    color: $bp-cyan;
+    font-weight: 700;
+    background: rgba(0, 233, 242, 0.14);
+    box-shadow: inset 0 -2px 0 $bp-cyan;
+  }
+
+  &:focus-visible {
+    outline: 2px solid $bp-cyan;
+    outline-offset: -2px;
+  }
+}
+
+.bp-shell-pane[hidden] {
+  display: none !important;
+}
+
+// Bad vs. Good Prompt Comparison Cards (Walkthrough Step 2)
+.bp-compare {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1.25rem 0 1.6rem;
+}
+
+.bp-compare-card {
+  border-radius: 7px;
+  padding: 0.95rem 1.15rem;
+  background: rgba(4, 16, 32, 0.62);
+  border: 1px solid $bp-border;
+  border-inline-start-width: 4px;
+
+  &.is-bad {
+    border-color: rgba(255, 133, 133, 0.28);
+    border-inline-start-color: $bp-coral;
+  }
+
+  &.is-warn {
+    border-color: rgba(255, 194, 142, 0.28);
+    border-inline-start-color: $bp-amber;
+  }
+
+  &.is-good {
+    background: linear-gradient(115deg, rgba(7, 38, 52, 0.78), rgba(4, 20, 36, 0.85));
+    border-color: rgba(164, 246, 197, 0.48);
+    border-inline-start-color: $bp-mint;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28), inset 0 0 0 1px rgba(164, 246, 197, 0.08);
+  }
+}
+
+.bp-compare-head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-bottom: 0.55rem;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
+
+  .is-bad & svg {
+    stroke: $bp-coral;
+  }
+
+  .is-warn & svg {
+    stroke: $bp-amber;
+  }
+
+  .is-good & svg {
+    stroke: $bp-mint;
+  }
+}
+
+.bp-compare-tag {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.14rem 0.5rem;
+  border-radius: 4px;
+
+  .is-bad & {
+    color: $bp-coral;
+    background: rgba(255, 133, 133, 0.12);
+    border: 1px solid rgba(255, 133, 133, 0.35);
+  }
+
+  .is-warn & {
+    color: $bp-amber;
+    background: rgba(255, 194, 142, 0.12);
+    border: 1px solid rgba(255, 194, 142, 0.35);
+  }
+
+  .is-good & {
+    color: $bp-mint;
+    background: rgba(164, 246, 197, 0.14);
+    border: 1px solid rgba(164, 246, 197, 0.45);
+  }
+}
+
+.bp-compare-title {
+  font-weight: 650;
+  font-size: 0.94rem;
+  color: #ffffff;
+}
+
+.bp-compare-prompt {
+  margin: 0.45rem 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 5px;
+  background: $bp-code-bg;
+  border: 1px solid rgba(67, 102, 123, 0.32);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: $bp-text;
+
+  .is-good & {
+    border-color: rgba(164, 246, 197, 0.32);
+    color: #ffffff;
+  }
+}
+
+.bp-compare-outcome {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: $bp-muted;
+
+  strong {
+    color: $bp-text-secondary;
+  }
+
+  .is-good & {
+    color: $bp-text-secondary;
+
+    strong {
+      color: $bp-mint;
+    }
+  }
+}
+
+// Blueprint HTML/CSS Architecture & Workflow Flowcharts (zero binary images, crisp text)
+.bp-flow {
+  margin: 1.35rem 0 1.75rem;
+  padding: 1.25rem;
+  border-radius: 8px;
+  border: 1px solid $bp-border;
+  background:
+    linear-gradient(115deg, rgba(4, 16, 32, 0.86), rgba(7, 30, 61, 0.74));
+  background-image:
+    linear-gradient(rgba(99, 162, 187, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(99, 162, 187, 0.045) 1px, transparent 1px),
+    linear-gradient(115deg, rgba(4, 16, 32, 0.88), rgba(7, 30, 61, 0.76));
+  background-size: 20px 20px, 20px 20px, 100% 100%;
+}
+
+.bp-flow-row {
+  display: grid;
+  gap: 0.7rem;
+  align-items: stretch;
+
+  &.cols-3 {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+
+  &.cols-3-plain {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  &.cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  &.cols-5-compact {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.bp-flow-node {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.8rem 0.95rem;
+  border-radius: 6px;
+  background: rgba(7, 30, 61, 0.88);
+  border: 1px solid rgba(0, 233, 242, 0.34);
+  box-shadow: 0 6px 16px rgba(2, 9, 20, 0.32);
+
+  &.is-center {
+    max-width: 28rem;
+    margin-inline: auto;
+    width: 100%;
+    text-align: center;
+    align-items: center;
+  }
+
+  &.is-coral {
+    border-color: rgba(255, 133, 133, 0.52);
+    background: linear-gradient(135deg, rgba(44, 16, 28, 0.82), rgba(7, 26, 48, 0.9));
+
+    .bp-flow-step {
+      color: $bp-coral;
+    }
+  }
+
+  &.is-amber {
+    border-color: rgba(255, 194, 142, 0.55);
+    background: linear-gradient(135deg, rgba(46, 30, 18, 0.82), rgba(7, 26, 48, 0.9));
+
+    .bp-flow-step {
+      color: $bp-amber;
+    }
+  }
+
+  &.is-mint {
+    border-color: rgba(164, 246, 197, 0.55);
+    background: linear-gradient(135deg, rgba(8, 42, 46, 0.85), rgba(6, 26, 44, 0.92));
+
+    .bp-flow-step {
+      color: $bp-mint;
+    }
+  }
+
+  &.is-box {
+    border-style: dashed;
+    border-color: rgba(0, 233, 242, 0.45);
+    background: rgba(4, 16, 32, 0.72);
+    padding: 1rem;
+    gap: 0.65rem;
+  }
+}
+
+.bp-flow-step {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: $bp-cyan;
+}
+
+.bp-flow-title {
+  font-size: 0.92rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: #ffffff;
+}
+
+.bp-flow-desc {
+  font-size: 0.81rem;
+  line-height: 1.45;
+  color: $bp-muted;
+}
+
+.bp-flow-arrow-h {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: $bp-cyan;
+  padding: 0 0.05rem;
+  user-select: none;
+
+  svg {
+    width: 18px;
+    height: 18px;
+    stroke: $bp-cyan;
+    flex-shrink: 0;
+  }
+}
+
+.bp-flow-arrow-v {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin: 0.55rem 0;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: $bp-cyan;
+  user-select: none;
+
+  svg {
+    width: 16px;
+    height: 16px;
+    stroke: $bp-cyan;
+    flex-shrink: 0;
+  }
+
+  span.bp-flow-cond {
+    padding: 0.15rem 0.55rem;
+    border-radius: 999px;
+    background: rgba(0, 233, 242, 0.09);
+    border: 1px solid rgba(0, 233, 242, 0.25);
+    color: $bp-text-secondary;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    font-size: 0.74rem;
+  }
+}
+
+.bp-flow-loop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 0.65rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed rgba(0, 233, 242, 0.28);
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.73rem;
+  letter-spacing: 0.05em;
+  color: $bp-mint;
+
+  svg {
+    width: 15px;
+    height: 15px;
+    stroke: $bp-mint;
+    flex-shrink: 0;
+  }
+}
+
+.bp-flow-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.45rem;
+
+  span {
+    padding: 0.28rem 0.6rem;
+    border-radius: 5px;
+    background: rgba(7, 30, 61, 0.92);
+    border: 1px solid rgba(0, 233, 242, 0.28);
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.76rem;
+    color: $bp-text;
+  }
+}
+
+@media (max-width: 760px) {
+  .bp-flow-row.cols-3,
+  .bp-flow-row.cols-3-plain,
+  .bp-flow-row.cols-2,
+  .bp-flow-row.cols-5-compact {
+    grid-template-columns: 1fr;
+  }
+
+  .bp-flow-arrow-h {
+    transform: rotate(90deg);
+    padding: 0.15rem 0;
   }
 }
 
@@ -666,6 +1112,7 @@ body {
 
   > li {
     border-inline-start-color: rgba(0, 233, 242, 0.32);
+    padding-inline-start: 2.35rem;
     padding-bottom: 1.65rem;
   }
 }
@@ -899,5 +1346,144 @@ body {
   .bp-diagram {
     max-width: 250px;
     justify-self: center;
+  }
+}
+
+// Browseable Skill / Agent Prompt Drawers
+.bp-skill-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin: 1rem 0 1.75rem;
+}
+
+.bp-skill-drawer {
+  border: 1px solid $bp-border;
+  border-radius: 7px;
+  background: rgba(4, 16, 32, 0.62);
+  overflow: hidden;
+  transition: border-color 0.15s ease, background 0.15s ease;
+
+  &:hover {
+    border-color: rgba(0, 233, 242, 0.5);
+  }
+
+  &[open] {
+    border-color: rgba(0, 233, 242, 0.62);
+    background: rgba(5, 19, 38, 0.88);
+
+    .bp-skill-chevron::after {
+      transform: rotate(90deg);
+    }
+  }
+}
+
+.bp-skill-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.85rem 1.05rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.32rem;
+  user-select: none;
+
+  &::-webkit-details-marker {
+    display: none;
+  }
+}
+
+.bp-skill-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.bp-skill-name {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.84rem !important;
+  font-weight: 700;
+  color: $bp-cyan !important;
+  background: rgba(0, 233, 242, 0.1) !important;
+  border: 1px solid rgba(0, 233, 242, 0.32);
+  padding: 0.12rem 0.48rem !important;
+  border-radius: 5px;
+}
+
+.bp-skill-meta {
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.72rem;
+  color: $bp-mint;
+  background: rgba(164, 246, 197, 0.08);
+  border: 1px solid rgba(164, 246, 197, 0.28);
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+
+.bp-skill-chevron {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: $bp-caption;
+
+  &::after {
+    content: ">";
+    display: inline-block;
+    font-weight: 700;
+    color: $bp-cyan;
+    transition: transform 0.15s ease;
+  }
+}
+
+.bp-skill-desc {
+  font-size: 0.86rem;
+  line-height: 1.48;
+  color: $bp-text-secondary;
+}
+
+.bp-skill-body {
+  border-top: 1px solid $bp-divider;
+  background: rgba(3, 12, 24, 0.72);
+  padding: 0.75rem 1.15rem 1.1rem;
+}
+
+.bp-skill-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.65rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px dashed $bp-divider;
+  font-size: 0.78rem;
+  color: $bp-caption;
+
+  a {
+    font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+    font-size: 0.75rem;
+  }
+}
+
+.bp-skill-markdown {
+  font-size: 0.88rem;
+
+  h1 {
+    font-size: 1.15rem !important;
+    margin-top: 0.25rem !important;
+  }
+
+  h2 {
+    font-size: 0.98rem !important;
+    margin-top: 1.1rem !important;
+  }
+
+  h3 {
+    font-size: 0.9rem !important;
   }
 }

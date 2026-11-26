@@ -13,7 +13,7 @@
   {{- if not $hasNext -}}
   <div class="bp-complete-banner">
     <div class="bp-eyebrow"><span class="bp-dot" aria-hidden="true"></span><span>WALKTHROUGH COMPLETE // {{ printf "%02d OF %02d" $total $total }}</span></div>
-    <p>You have walked a real Go feature from plain-English planning and small tested slices through local pre-PR review and a bounded GitHub Copilot loop. Explore the <strong>Reference &amp; Lookup</strong> guides in the sidebar whenever you want to set up your own repo or customize models.</p>
+    <p>You have walked a real Go feature from plain-English issue scoping and incremental test-first steps through local pre-PR review and a bounded GitHub Copilot loop. Ready to run multiple issues in parallel, or adopt this setup in your own repository? Jump into <strong>Advanced Workflows</strong> or <strong>Reference &amp; Lookup</strong> next.</p>
   </div>
   {{- end -}}
 
@@ -42,10 +42,11 @@
         {{- end -}}
       </a>
     {{- else -}}
-      {{- with site.GetPage "/docs/reference/repo-and-github-setup" -}}
+      {{- with site.GetPage "/docs/advanced/parallel-agents-with-herdr" -}}
       <a class="bp-step-card is-next" href="{{ .RelPermalink }}">
-        <span class="bp-step-dir">UP NEXT // REFERENCE -&gt;</span>
+        <span class="bp-step-dir">UP NEXT // ADVANCED -&gt;</span>
         <span class="bp-step-title">{{ .Title }}</span>
+        <span class="bp-step-goal">Run waves of independent issues in parallel across isolated Git worktrees without babysitting panes.</span>
       </a>
       {{- end -}}
     {{- end -}}
