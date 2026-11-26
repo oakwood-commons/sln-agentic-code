@@ -27,8 +27,8 @@ works. Second, keep two kinds of AI files cleanly separated:
   or Antigravity `agy`).
 
 Both are installed safely by **[`scafctl`](/docs/reference/glossary.md#scafctl)**,
-an open-source workflow and scaffolding CLI used here to run portable project
-actions and add missing starter files without stepping on an existing
+an open-source CLI to declaratively discover data, shape configuration, and run
+portable workflows for humans and AI agents without stepping on an existing
 configuration.
 
 ---
