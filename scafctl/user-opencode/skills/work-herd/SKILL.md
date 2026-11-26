@@ -75,12 +75,17 @@ current wave:
 
 1. **Create an isolated worktree off latest `origin/main` with `--no-focus`:**
    Open each branch worktree nested under the parent repo workspace (never
-   cramming workers into narrow split panes, as TUIs need ~90+ columns).
+   cramming workers into narrow split panes, as TUIs need ~90+ columns). When
+   the ticket is a local Markdown issue (`temp/issues/<NNN>-<slug>.md`), copy
+   that file into `<worktree-path>/temp/issues/` (`mkdir -p "<worktree-path>/temp/issues" && cp "temp/issues/<file>.md" "<worktree-path>/temp/issues/"`)
+   because `git worktree` omits git-ignored directories.
 2. **Start the worker agent** (`--kind opencode`, or `agy` / `claude` matching
    the user's harness) inside that worktree's pane.
-3. **Deliver `worker-prompt.md` (in this skill directory)** with `__ISSUE__`,
+3. **Deliver `worker-prompt.md` (in this skill directory)** with `__ISSUE__`
+   (for example, `#101`, `PROJ-101`, or `temp/issues/001-expiring-links.md`),
    `__REPO__`, `__BRANCH__`, and `__AGENTNAME__` substituted (ensuring zero
-   unreplaced `__` placeholders remain).
+   unreplaced `__` placeholders remain, and confirming any local `temp/issues/`
+   file was copied into `<worktree-path>/temp/issues/` or inlined in the prompt).
 4. **Verify delivery (`agent_prompted` is NOT delivery):** Wait for the TUI
    ready state before sending, then confirm the worker transitions from `idle`
    -> `working` within ~30s (a prompt sent while a TUI is still booting can drop

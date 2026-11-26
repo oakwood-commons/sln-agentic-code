@@ -16,7 +16,9 @@ description: "Use when creating branches or worktrees, writing signed Convention
 - **Isolated worktrees**: For parallel or disturbance-free work, create a
   sibling worktree (`git worktree add ../<repo>-worktrees/<slug> -b <branch>`)
   and start your coding session rooted inside that worktree so LSP and git state
-  stay isolated.
+  stay isolated. When working from a git-ignored local issue
+  (`temp/issues/<NNN>-<slug>.md`), copy that file into
+  `<worktree-path>/temp/issues/` after creating the worktree.
 - **Conventional commits + signing**: Format subjects as
   `<type>(<optional-scope>): <summary>` and sign commits with DCO sign-off when
   supported (`git commit -s -S`). Never run `git commit --amend` on published

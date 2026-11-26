@@ -28,7 +28,9 @@ do not have remote issue-tracker write access.
   exactly as you would for a GitHub or Jira ticket.
 - **Herdr multi-issue waves (`work-herd`):** List open files in `temp/issues/`
   and map dependencies and hotspot files across `001`, `002`, `003` to build
-  `temp/plans/<repo>-herd.md`.
+  `temp/plans/<repo>-herd.md`. Because `git worktree` omits git-ignored
+  directories, copy each assigned `temp/issues/<NNN>-<slug>.md` into
+  `<worktree-path>/temp/issues/` before starting its worker.
 
 ## 3. Branch Naming
 

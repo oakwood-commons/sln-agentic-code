@@ -2,7 +2,10 @@
 
 Substitute `__ISSUE__`, `__REPO__` (`owner/repo`), `__BRANCH__`, and
 `__AGENTNAME__` before sending to a freshly started worker in its dedicated
-worktree. Confirm zero `__`-delimited placeholders remain before sending.
+worktree. When `__ISSUE__` is a local Markdown file (`temp/issues/<NNN>-<slug>.md`),
+copy that file into `<worktree-path>/temp/issues/` first (or inline its full
+contents below) because `git worktree` omits git-ignored directories. Confirm
+zero `__`-delimited placeholders remain before sending.
 
 ~~~text
 You are an autonomous worker implementing exactly ONE ticket (`__ISSUE__` in `__REPO__`)
@@ -10,7 +13,7 @@ inside this dedicated git worktree on branch __BRANCH__.
 Do NOT switch branches or work on any other ticket. Your Herdr agent name is __AGENTNAME__.
 
 STEP 1: Understand & Validate
-- Read the ticket (`github-issues` via `gh issue view`, `jira-issues` via Jira MCP, or `local-issues` in `temp/issues/`) and read `AGENTS.md` + `REVIEW.md`.
+- Read the ticket (`github-issues` via `gh issue view`, `jira-issues` via Jira MCP, or `local-issues` in `temp/issues/`; if a local `temp/issues/` file is missing in this worktree, stop and ask the coordinator rather than guessing) and read `AGENTS.md` + `REVIEW.md`.
 - Load the `planner` and `git-github-workflow` skills: verify the ticket against live `file:line` code and break the work into small testable steps. If a genuine product ambiguity blocks implementation, stop and ask the coordinator rather than guessing.
 
 STEP 2: Implement & Verify Locally
@@ -20,7 +23,7 @@ STEP 2: Implement & Verify Locally
 
 STEP 3: Commit, Push & Open Ready-for-Review PR
 - Fetch and rebase onto the default branch before pushing (taking the default branch's lockfile and reconciling from imports if a lockfile conflicts).
-- Sign-commit (`git commit -s -S`) using Conventional Commits, push, and open a **ready-for-review** PR (not draft, so Round 1 Copilot review triggers) linking `__ISSUE__` (`Closes #<N>` for GitHub Issues or `Refs <KEY>` for Jira). Do NOT merge.
+- Sign-commit (`git commit -s -S`) using Conventional Commits, push, and open a **ready-for-review** PR (not draft, so Round 1 Copilot review triggers) linking `__ISSUE__` (`Closes #<N>` for GitHub Issues, `Refs <KEY>` for Jira, or no remote-closing footer for git-ignored local issues). Do NOT merge.
 - Rename your Herdr agent to include the PR number:
   `herdr agent rename "$HERDR_PANE_ID" __AGENTNAME__-pr<N>`
 
