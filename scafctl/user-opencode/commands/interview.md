@@ -3,8 +3,10 @@ description: "Walk through an ambiguous idea or complex problem one plain-Englis
 agent: plan
 ---
 
-Load the `stepwise-interview` skill and interview me one plain-English question
-at a time (with your recommended answer on each step) until we reach a shared
-design understanding for:
+Load the `stepwise-interview` skill. Treat any libraries or constraints stated
+below as settled, share a brief best-practice take on the cleanest (not easiest)
+design based on how similar tools solve this, and interview me one plain-English
+question at a time (with your recommendation) on only the genuinely open choices
+for:
 
 $ARGUMENTS

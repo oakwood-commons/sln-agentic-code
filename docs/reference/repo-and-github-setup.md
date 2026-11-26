@@ -7,8 +7,9 @@ weight: 20
 
 Once you have tried the walkthrough on `shorty`, you can set up any of your own
 Go repositories with the exact same repo contracts, portable Go CI, and GitHub
-settings using the published `agentic-code` solution -- **no repository clone
-required**.
+settings using the published `agentic-code`
+[`scafctl`](/docs/reference/glossary.md#scafctl) solution (no repository clone
+required).
 
 ---
 
@@ -16,12 +17,14 @@ required**.
 
 Run `init-repo` against your Go project directory:
 
-~~~bash
+{{< shell-toggle >}}
+{{< shell-pane "bash" >}}
 # Preview the files that will be created
 scafctl run solution agentic-code --action init-repo \
   -r repo_dir=/path/to/your-service \
   -r project_name=your-service \
   -r module_name=github.com/your-org/your-service \
+  -r issue_tracker=github \
   -r min_coverage=70 \
   --dry-run
 
@@ -30,20 +33,41 @@ scafctl run solution agentic-code --action init-repo \
   -r repo_dir=/path/to/your-service \
   -r project_name=your-service \
   -r module_name=github.com/your-org/your-service \
+  -r issue_tracker=github \
   -r min_coverage=70
-~~~
+{{< /shell-pane >}}
+{{< shell-pane "powershell" >}}
+# Preview the files that will be created
+scafctl run solution agentic-code --action init-repo `
+  -r repo_dir=C:\code\your-service `
+  -r project_name=your-service `
+  -r module_name=github.com/your-org/your-service `
+  -r issue_tracker=github `
+  -r min_coverage=70 `
+  --dry-run
+
+# Write the files (creates .bak backups if any target file already exists)
+scafctl run solution agentic-code --action init-repo `
+  -r repo_dir=C:\code\your-service `
+  -r project_name=your-service `
+  -r module_name=github.com/your-org/your-service `
+  -r issue_tracker=github `
+  -r min_coverage=70
+{{< /shell-pane >}}
+{{< /shell-toggle >}}
 
 *(Running from a local clone of `sln-agentic-code`? Replace `agentic-code` with
 `-f ./scafctl/solution.yaml`.)*
 
 What gets added to `/path/to/your-service`:
-- **`AGENTS.md`** -- build, test, lint, and Go conventions for contributors and
-  coding agents.
-- **`REVIEW.md`** -- single-pass PR review contract (focusing on bugs, callers,
-  races, and `<last_reviewed_commit>..HEAD` delta re-reviews).
-- **`.github/copilot-instructions.md`** -- points GitHub Copilot at `AGENTS.md`
+- **`AGENTS.md`:** build, test, lint, Go conventions, and your repository's
+  default issue tracker (`-r issue_tracker=github` default, or `jira`, `local`,
+  `jira+github`, `github+local` with `-r jira_project=PROJ`).
+- **`REVIEW.md`:** single-pass PR review contract focusing on bugs, callers,
+  races, and `<last_reviewed_commit>..HEAD` delta re-reviews.
+- **`.github/copilot-instructions.md`:** points GitHub Copilot at `AGENTS.md`
   and `REVIEW.md` without duplicating rules.
-- **`ci/go-ci/actions.yaml`** -- portable Go CI workflow (pass `-r
+- **`ci/go-ci/actions.yaml`:** portable Go CI workflow (pass `-r
   include_go_ci=false` if your repo already has its own CI actions file).
 
 ---
@@ -55,7 +79,8 @@ easy to misconfigure (especially leaving `review_on_push` enabled by mistake).
 
 Authenticate `scafctl` with GitHub once, preview with `--dry-run`, and apply:
 
-~~~bash
+{{< shell-toggle >}}
+{{< shell-pane "bash" >}}
 # Log in once (uses scafctl's GitHub auth plugin)
 scafctl auth login github
 
@@ -65,11 +90,27 @@ scafctl run solution agentic-code --action configure-github \
   -r repo=your-service \
   --dry-run
 
-# Apply idempotently (safe to re-run anytime -- updates existing rulesets in place)
+# Apply idempotently (safe to re-run anytime; updates existing rulesets in place)
 scafctl run solution agentic-code --action configure-github \
   -r owner=your-org \
   -r repo=your-service
-~~~
+{{< /shell-pane >}}
+{{< shell-pane "powershell" >}}
+# Log in once (uses scafctl's GitHub auth plugin)
+scafctl auth login github
+
+# Preview API operations
+scafctl run solution agentic-code --action configure-github `
+  -r owner=your-org `
+  -r repo=your-service `
+  --dry-run
+
+# Apply idempotently (safe to re-run anytime; updates existing rulesets in place)
+scafctl run solution agentic-code --action configure-github `
+  -r owner=your-org `
+  -r repo=your-service
+{{< /shell-pane >}}
+{{< /shell-toggle >}}
 
 > [!NOTE]
 > **Personal GitHub accounts vs. GitHub Organizations:** Organization repos
@@ -82,7 +123,7 @@ scafctl run solution agentic-code --action configure-github \
 | Setting / Ruleset | Why It Matters for Agentic Workflows |
 |---|---|
 | **Squash-only merges (`PR_TITLE` + `PR_BODY`)** | Every PR lands on `main` as one clean Conventional Commit built from the PR title and body (which `/pr-create` keeps synced to `HEAD`), and deletes merged feature branches automatically. |
-| **`Copilot review for default branch`** | Protects `main` against force-push/deletion and configures GitHub Copilot Code Review with **`review_on_push: false`** and **`review_draft_pull_requests: false`** so you only spend review quota on ready-for-review PRs. |
+| **`Copilot review for default branch`** | Protects `main` against force-push/deletion and configures GitHub Copilot Code Review with **`review_on_push: false`** and **`review_draft_pull_requests: false`** so you only spend review quota on ready-for-review PRs (pass `-r enable_copilot_ruleset=false` if your account does not have Copilot Code Review). |
 | **`all-branches-signed-commits`** | Requires cryptographic commit signatures (`git commit -s -S`) across all branches. Pass `-r require_signed_commits=false` if your team has not set up SSH/GPG signing yet. |
-| **`default-branch` PR protection** | Requires pull requests, **`required_review_thread_resolution: true`** (every review comment must be replied to and resolved before merge), and stale-review dismissal. |
+| **`default-branch` PR protection** | Requires pull requests, **`required_review_thread_resolution: true`** (every review comment must be replied to and resolved before merge), and stale-review dismissal (with `OrganizationAdmin` bypass enabled by default when `required_approvals > 0`, configurable via `-r org_admin_bypass=true\|false`). |
 | **Security & optional GitHub Pages** | Enables Dependabot vulnerability alerts, and sets GitHub Pages to GitHub Actions `workflow` mode when `-r enable_pages=true` is passed. |

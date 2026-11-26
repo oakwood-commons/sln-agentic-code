@@ -1,4 +1,4 @@
-# sln-agentic-code -- AI Agent Instructions
+# sln-agentic-code: AI Agent Instructions
 
 `AGENTS.md` at the repository root is the canonical guidance for contributors
 and tools: `scafctl` build/test/lint commands, Go conventions for

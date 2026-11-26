@@ -20,6 +20,8 @@ module:
       target: assets
     - source: ../layouts
       target: layouts
+    - source: ../scafctl/user-opencode
+      target: assets/starter
     - source: ../static
       target: static
 
@@ -46,6 +48,8 @@ markup:
     codeFences: true
     guessSyntax: true
   goldmark:
+    extensions:
+      typographer: false
     renderer:
       unsafe: true
 
@@ -55,6 +59,6 @@ menu:
     - name: "GitHub Repository"
       url: "https://github.com/oakwood-commons/sln-agentic-code"
       weight: 10
-    - name: "scafctl Docs"
-      url: "https://oakwood-commons.github.io/scafctl/"
+    - name: "scafctl Docs & Install"
+      url: "https://scafctl.oakwood-commons.org/docs/tutorials/getting-started/#installation"
       weight: 20

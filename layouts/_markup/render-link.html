@@ -1,6 +1,5 @@
-{{- /* Render hook for links: resolves .md file references to proper Hugo page URLs */ -}}
+{{- /* Render hook for links: resolves .md file references and root-relative paths to proper Hugo page URLs */ -}}
 {{- $url := .Destination -}}
-{{- $text := .Text -}}
 {{- $title := .Title -}}
 
 {{- $isExternal := or (hasPrefix $url "http://") (hasPrefix $url "https://") (hasPrefix $url "mailto:") -}}
@@ -14,10 +13,23 @@
   {{- end -}}
 
   {{- if strings.HasSuffix $url ".md" -}}
+    {{- $trimmed := strings.TrimSuffix ".md" $url -}}
+    {{- $trimmed = strings.TrimSuffix "/_index" $trimmed -}}
     {{- with .Page.GetPage $url -}}
       {{- $url = .RelPermalink -}}
+    {{- else with site.GetPage $trimmed -}}
+      {{- $url = .RelPermalink -}}
+    {{- else with .Page.GetPage $trimmed -}}
+      {{- $url = .RelPermalink -}}
     {{- else -}}
-      {{- warnf "render-link: could not resolve .md link %q on page %q -- check the file exists in Hugo's content tree" $url .Page.RelPermalink -}}
+      {{- $url = printf "%s/" (strings.TrimRight "/" ($trimmed | relURL)) -}}
+    {{- end -}}
+  {{- else if hasPrefix $url "/" -}}
+    {{- $trimmed := strings.TrimRight "/" $url -}}
+    {{- with site.GetPage $trimmed -}}
+      {{- $url = .RelPermalink -}}
+    {{- else -}}
+      {{- $url = strings.TrimPrefix "/" $url | relURL -}}
     {{- end -}}
   {{- end -}}
 
@@ -29,4 +41,4 @@
 <a href="{{ $url | safeURL }}"
   {{- with $title }} title="{{ . }}"{{ end -}}
   {{- if $isExternal }} target="_blank" rel="noopener noreferrer"{{ end -}}
->{{ $text }}</a>
+>{{ .Text | safeHTML }}</a>{{- "" -}}

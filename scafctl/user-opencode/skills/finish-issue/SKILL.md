@@ -1,23 +1,26 @@
 ---
 name: finish-issue
-description: "Local 'Issue Definition of Done' quality gate: run static checks, dispatch code-reviewer and artifact-auditor IN PARALLEL over one frozen diff, fix whole defect classes in one pass, and run final lint before proposing any commit."
+description: "Use automatically before pushing or opening a pull request (or via /finish-issue): runs static checks, dispatches code-reviewer and artifact-auditor IN PARALLEL over the branch diff, fixes defect classes in one pass, and runs final lint."
 ---
 
-# Finish-Issue Local Quality Gate (`$0` Pre-PR Gate)
+# Finish-Issue Pre-PR Self-Review Gate
 
-Run this gate locally as the final phase of any substantive change, before
-proposing a commit or opening a pull request. Catching bugs locally costs zero
-CI minutes and zero GitHub Copilot review credits.
+Run this gate automatically on your feature branch before pushing and opening a
+pull request (or against uncommitted changes when asked directly). Deterministic
+checks (`go test -race`, linters, `gosec`) run free on your CPU, and catching
+defects before opening the PR saves CI minutes, GitHub Copilot PR review
+credits, and human review time.
 
-## Phase 1 -- Build, Test & Static Security Scan
+## Phase 1: Build, Test & Static Security Scan
 
-1. Inspect `git status --short` and `git diff --shortstat`. Stop if clean.
+1. Inspect `git status --short` and the diff (`git diff` if uncommitted, or
+   `git diff origin/main...HEAD` on a committed feature branch). Stop if empty.
 2. Run the repository's build and test commands (`scafctl run action ci`,
    `task test`, or `go test -race ./...`). Fix any red test first.
 3. Run local static security checks (`gosec ./...` for Go repos) and smoke-test
    CLI `--help` + one valid and one invalid invocation when CLI flags changed.
 
-## Phase 2 -- Parallel Review Over One Frozen Diff
+## Phase 2: Parallel Review Over One Frozen Diff
 
 Dispatch `code-reviewer` and `artifact-auditor` **in parallel in a single turn**
 over the same diff:
@@ -31,7 +34,7 @@ over the same diff:
   2. *Security, Trust Boundaries & File Modes*
   3. *Concurrency, Resource Lifecycle & Test Reality*
 
-## Phase 3 -- Merge & Fix Defect Classes
+## Phase 3: Merge & Fix Defect Classes
 
 Merge all findings into one list before editing:
 
@@ -41,7 +44,7 @@ Merge all findings into one list before editing:
 - **Pause and ask the human** whenever a finding involves a real design or API
   trade-off rather than a clear bug.
 
-## Phase 4 -- Final Lint & Summary
+## Phase 4: Final Lint & Summary
 
 Re-run the repository's tests and linter on the final diff, then summarize
 findings resolved, artifact status, and verification output. Never commit or

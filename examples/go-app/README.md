@@ -1,4 +1,4 @@
-# `shorty` -- Sample Go URL Shortener
+# `shorty`: Sample Go URL Shortener
 
 Minimal Go standard-library HTTP service used in the guided walkthrough.
 
@@ -11,7 +11,7 @@ go run ./cmd/shorty -addr :8080
 
 ## Endpoints
 
-### `POST /links` -- Create a Short Link
+### `POST /links` (Create a Short Link)
 
 Request:
 
@@ -30,7 +30,7 @@ Response (`201 Created`):
 }
 ~~~
 
-### `GET /{code}` -- Redirect to Original URL
+### `GET /{code}` (Redirect to Original URL)
 
 ~~~bash
 curl -i http://localhost:8080/a1b2c3

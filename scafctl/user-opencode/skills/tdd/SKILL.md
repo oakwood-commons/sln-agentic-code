@@ -1,6 +1,6 @@
 ---
 name: tdd
-description: "Use when building a feature or fixing a bug test-first (Red -> Green -> Refactor) at public seams."
+description: "Use automatically when implementing a feature or fixing a bug: writes one failing test at a public seam first, makes it pass, and refactors (Red -> Green -> Refactor)."
 ---
 
 <!-- Adapted from mattpocock/skills (MIT License): https://github.com/mattpocock/skills -->
@@ -19,13 +19,13 @@ before writing tests.
 
 ## Three Anti-Patterns to Avoid
 
-1. **Implementation-coupled** -- mocking private helpers or asserting internal
+1. **Implementation-coupled:** mocking private helpers or asserting internal
    fields so tests break on harmless refactors.
-2. **Tautological** -- recomputing the expected value using the exact formula
+2. **Tautological:** recomputing the expected value using the exact formula
    under test instead of asserting against an independent literal or spec.
-3. **Horizontal slicing** -- writing 20 speculative tests up front and then all
-   the code. Work in **vertical slices** instead: one failing test -> minimal
-   implementation -> green suite -> refactor -> repeat.
+3. **All-tests-up-front batching:** writing 20 speculative tests up front and
+   then all the code. Work **one behavior at a time** instead: one failing test
+   -> minimal implementation -> green suite -> refactor -> repeat.
 
 ## Rules of the Loop
 
@@ -33,6 +33,6 @@ before writing tests.
 2. **Red must fail for the expected reason**: Confirm it fails because the
    behavior is missing, not because of a syntax or fixture error.
 3. **Green means the whole suite**: Run the full package/module test and lint
-   suite before finishing the slice.
-4. **Refactor after green**: Clean up naming and duplication inside the touched
-   slice while tests stay green before starting the next red test.
+   suite before moving on.
+4. **Refactor after green**: Clean up naming and duplication in the touched
+   code while tests stay green before starting the next failing test.

@@ -15,7 +15,7 @@ feature test-first, load `tdd` first.
    or `Taskfile.yml` first; otherwise use `go test -race ./...`, `go vet ./...`,
    and `golangci-lint run ./...`.
 2. **Run and read full output**: Work from real compiler/test/lint messages and
-   `file:line` stack traces -- never guess.
+   `file:line` stack traces rather than guessing.
 3. **Triage**: State the root cause of each failure with `file:line` evidence.
 4. **Fix minimally**: Fix the product defect rather than weakening assertions,
    deleting tests, or adding `t.Skip`.

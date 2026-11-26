@@ -47,7 +47,7 @@ before changes reach external PR review. Never rubber-stamp.
 3. **Inventory Interfaces & Trace Callers Outside the Diff**:
    - List every changed function signature, type, CLI flag, config key, schema,
      or error sentinel.
-   - Grep callers and sibling commands across the repository -- not only lines
+   - Grep callers and sibling commands across the repository, not only lines
      inside the diff.
    - For Go repositories, inspect upstream module behavior in `$GOMODCACHE`
      (`go list -m -f '{{.Dir}}' <module>`) when wrapping external types.

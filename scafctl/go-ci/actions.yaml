@@ -64,7 +64,7 @@ spec:
               value: "."
 
     tools_bin:
-      description: Directory where missing CI tools (golangci-lint, gosec) are installed
+      description: Directory where missing CI tools (go, golangci-lint, gosec) are installed
       type: string
       resolve:
         with:
@@ -74,6 +74,23 @@ spec:
           - provider: cel
             inputs:
               expression: '_.platform.cwd + "/.tool/bin"'
+      transform:
+        with:
+          - provider: cel
+            inputs:
+              expression: 'regex.match("^([A-Za-z]:[/\\\\]|/|\\\\\\\\)", __self) ? __self : _.platform.cwd + "/" + __self'
+
+    go_version:
+      description: Pinned Go toolchain version installed into tools_bin/go-sdk when Go 1.26+ is missing
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: go_version
+          - provider: static
+            inputs:
+              value: "1.26.11"
 
     golangci_lint_version:
       description: Pinned golangci-lint version (without leading v)
@@ -181,7 +198,7 @@ spec:
     actions:
       install-tools:
         displayName: Install Go CI Tools
-        description: Install golangci-lint and gosec for the detected OS and architecture if missing
+        description: Ensure Go 1.26+, golangci-lint, and gosec are available across Linux, macOS, and Windows
         provider: exec
         timeout: 10m
         inputs:
@@ -193,6 +210,8 @@ spec:
               expr: "_.platform.arch"
             TOOLS_BIN:
               rslvr: tools_bin
+            GO_VERSION:
+              rslvr: go_version
             GOLANGCI_LINT_VERSION:
               rslvr: golangci_lint_version
             GOSEC_VERSION:
@@ -203,14 +222,62 @@ spec:
               expr: "string(_.run_gosec)"
           command: |
             set -e
+            CR="$(printf '\r')"
             mkdir -p "$TOOLS_BIN"
+            GO_SDK_DIR="${TOOLS_BIN}/go-sdk"
             PATH_SEP=":"
             EXE_EXT=""
             if [ "$TARGET_OS" = "windows" ]; then
               PATH_SEP=";"
               EXE_EXT=".exe"
             fi
-            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+            export PATH="${GO_SDK_DIR}/bin${PATH_SEP}${TOOLS_BIN}${PATH_SEP}${PATH}"
+
+            REQ_REST="${GO_VERSION#1.}"
+            REQ_MINOR="${REQ_REST%%[!0-9]*}"
+            if [ -z "$REQ_MINOR" ]; then
+              REQ_MINOR="26"
+            fi
+
+            GO_OK="false"
+            if command -v go >/dev/null 2>&1; then
+              GV="$(go env GOVERSION 2>/dev/null || true)"
+              GV="${GV%"$CR"}"
+              case "$GV" in
+                go1.*)
+                  REST="${GV#go1.}"
+                  MINOR="${REST%%[!0-9]*}"
+                  if [ -n "$MINOR" ] && [ "$MINOR" -ge "$REQ_MINOR" ]; then
+                    GO_OK="true"
+                    echo "Go 1.${REQ_MINOR}+ already available: $(go version)"
+                  fi
+                  ;;
+              esac
+            fi
+            if [ "$GO_OK" != "true" ]; then
+              echo "Installing Go v${GO_VERSION} for ${TARGET_OS}/${TARGET_ARCH} into ${GO_SDK_DIR}..."
+              (
+                TMP_DIR="$(mktemp -d)"
+                trap 'rm -rf "$TMP_DIR"' EXIT
+                if [ "$TARGET_OS" = "windows" ]; then
+                  ARCHIVE="go${GO_VERSION}.windows-${TARGET_ARCH}.zip"
+                  URL="https://go.dev/dl/${ARCHIVE}"
+                  curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                  if command -v tar.exe >/dev/null 2>&1; then
+                    tar.exe -xf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                  else
+                    ARCHIVE_PATH="${TMP_DIR}/${ARCHIVE}" DEST_DIR="$TMP_DIR" powershell.exe -NoProfile -Command 'Expand-Archive -LiteralPath $env:ARCHIVE_PATH -DestinationPath $env:DEST_DIR -Force'
+                  fi
+                else
+                  ARCHIVE="go${GO_VERSION}.${TARGET_OS}-${TARGET_ARCH}.tar.gz"
+                  URL="https://go.dev/dl/${ARCHIVE}"
+                  curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                  tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                fi
+                rm -rf "$GO_SDK_DIR"
+                mv "${TMP_DIR}/go" "$GO_SDK_DIR"
+              )
+            fi
 
             if [ "$NEED_LINT" = "true" ]; then
               LINT_VER_OUT=""
@@ -265,7 +332,11 @@ spec:
                     ARCHIVE="gosec_${GOSEC_VERSION}_${TARGET_OS}_${TARGET_ARCH}.tar.gz"
                     URL="https://github.com/securego/gosec/releases/download/v${GOSEC_VERSION}/${ARCHIVE}"
                     curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
-                    tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                    if [ "$TARGET_OS" = "windows" ] && command -v tar.exe >/dev/null 2>&1; then
+                      tar.exe -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                    else
+                      tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                    fi
                     cp "${TMP_DIR}/gosec${EXE_EXT}" "${TOOLS_BIN}/gosec${EXE_EXT}"
                     chmod +x "${TOOLS_BIN}/gosec${EXE_EXT}"
                   )
@@ -277,6 +348,8 @@ spec:
         displayName: Format Check (gofmt)
         description: Verify all Go source files are formatted with gofmt
         provider: exec
+        dependsOn:
+          - install-tools
         timeout: 2m
         inputs:
           workingDir:
@@ -284,7 +357,16 @@ spec:
           passthrough: true
           env:
             GOWORK: "off"
+            TARGET_OS:
+              expr: "_.platform.os"
+            TOOLS_BIN:
+              rslvr: tools_bin
           command: |
+            PATH_SEP=":"
+            if [ "$TARGET_OS" = "windows" ]; then
+              PATH_SEP=";"
+            fi
+            export PATH="${TOOLS_BIN}/go-sdk/bin${PATH_SEP}${TOOLS_BIN}${PATH_SEP}${PATH}"
             CR="$(printf '\r')"
             RAW_UNFORMATTED="$(gofmt -l .)"
             UNFORMATTED=""
@@ -311,6 +393,8 @@ spec:
         displayName: Go Vet
         description: Run go vet across all packages in the module
         provider: exec
+        dependsOn:
+          - install-tools
         timeout: 5m
         inputs:
           workingDir:
@@ -318,7 +402,17 @@ spec:
           passthrough: true
           env:
             GOWORK: "off"
-          command: "go vet ./..."
+            TARGET_OS:
+              expr: "_.platform.os"
+            TOOLS_BIN:
+              rslvr: tools_bin
+          command: |
+            PATH_SEP=":"
+            if [ "$TARGET_OS" = "windows" ]; then
+              PATH_SEP=";"
+            fi
+            export PATH="${TOOLS_BIN}/go-sdk/bin${PATH_SEP}${TOOLS_BIN}${PATH_SEP}${PATH}"
+            go vet ./...
 
       lint:
         displayName: GolangCI-Lint
@@ -344,7 +438,7 @@ spec:
             if [ "$TARGET_OS" = "windows" ]; then
               PATH_SEP=";"
             fi
-            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+            export PATH="${TOOLS_BIN}/go-sdk/bin${PATH_SEP}${TOOLS_BIN}${PATH_SEP}${PATH}"
             golangci-lint run ./...
 
       gosec:
@@ -371,13 +465,15 @@ spec:
             if [ "$TARGET_OS" = "windows" ]; then
               PATH_SEP=";"
             fi
-            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+            export PATH="${TOOLS_BIN}/go-sdk/bin${PATH_SEP}${TOOLS_BIN}${PATH_SEP}${PATH}"
             gosec -quiet ./...
 
       test:
         displayName: Go Tests & Coverage
         description: Run unit tests (with -race when available) and enforce minimum statement coverage
         provider: exec
+        dependsOn:
+          - install-tools
         timeout: 10m
         inputs:
           workingDir:
@@ -389,19 +485,29 @@ spec:
               expr: "_.platform.os"
             TARGET_ARCH:
               expr: "_.platform.arch"
+            TOOLS_BIN:
+              rslvr: tools_bin
             ENABLE_RACE:
               expr: "string(_.race)"
             MIN_COVERAGE:
               expr: "string(_.min_coverage)"
           command: |
             set -e
+            PATH_SEP=":"
+            if [ "$TARGET_OS" = "windows" ]; then
+              PATH_SEP=";"
+            fi
+            export PATH="${TOOLS_BIN}/go-sdk/bin${PATH_SEP}${TOOLS_BIN}${PATH_SEP}${PATH}"
+            CR="$(printf '\r')"
             RACE_ARG=""
             if [ "$ENABLE_RACE" = "true" ]; then
               if [ "$TARGET_OS" = "windows" ] && [ "$TARGET_ARCH" = "arm64" ]; then
                 echo "Go race detector is unsupported on windows/arm64; running go test without -race"
               else
                 CC_BIN="$(go env CC 2>/dev/null || true)"
-                if [ -n "$CC_BIN" ] && command -v "$CC_BIN" >/dev/null 2>&1; then
+                CC_BIN="${CC_BIN%"$CR"}"
+                CC_CMD="${CC_BIN%% *}"
+                if [ -n "$CC_CMD" ] && command -v "$CC_CMD" >/dev/null 2>&1; then
                   RACE_ARG="-race"
                 else
                   echo "C compiler not found; running go test without -race"
@@ -418,7 +524,6 @@ spec:
               go test -coverprofile="$TMP_COVER" ./...
             fi
 
-            CR="$(printf '\r')"
             COV_OUT="$(go tool cover -func="$TMP_COVER")"
             LAST_LINE="${COV_OUT##*
             }"
@@ -453,11 +558,20 @@ spec:
           env:
             GOWORK: "off"
             CGO_ENABLED: "0"
+            TARGET_OS:
+              expr: "_.platform.os"
+            TOOLS_BIN:
+              rslvr: tools_bin
             BUILD_PKG:
               rslvr: build_pkg
             OUTPUT_BIN:
               rslvr: output_bin
           command: |
+            PATH_SEP=":"
+            if [ "$TARGET_OS" = "windows" ]; then
+              PATH_SEP=";"
+            fi
+            export PATH="${TOOLS_BIN}/go-sdk/bin${PATH_SEP}${TOOLS_BIN}${PATH_SEP}${PATH}"
             if [ -n "$OUTPUT_BIN" ]; then
               case "$OUTPUT_BIN" in
                 */*|*\\*) mkdir -p "${OUTPUT_BIN%[/\\]*}" ;;
@@ -493,19 +607,25 @@ spec:
         assertions:
           - expression: '__output.workdir == "."'
             message: Default workdir should be current directory
+          - expression: '__output.go_version == "1.26.11"'
+            message: Default go_version should be 1.26.11
           - expression: "__output.race == true"
             message: Race detection should default to true
           - expression: "__output.min_coverage == 70"
             message: Default minimum coverage should be 70
 
       override-parameters:
-        description: Verify CLI parameter overrides coerce types accurately
+        description: Verify CLI parameter overrides coerce types and normalize relative tools_bin paths accurately
         command: [run, resolver]
-        args: [-r, workdir=examples/go-app, -r, race=false, -r, min_coverage=80, -o, json]
+        args: [-r, workdir=examples/go-app, -r, tools_bin=custom-tools/bin, -r, go_version=1.27.0, -r, race=false, -r, min_coverage=80, -o, json]
         exitCode: 0
         assertions:
           - expression: '__output.workdir == "examples/go-app"'
             message: workdir override should take effect
+          - expression: '__output.tools_bin.endsWith("/custom-tools/bin") && !__output.tools_bin.startsWith("custom-tools/")'
+            message: Relative tools_bin override should normalize to an absolute path
+          - expression: '__output.go_version == "1.27.0"'
+            message: go_version override should take effect
           - expression: "__output.race == false"
             message: race boolean should coerce to false
           - expression: "__output.min_coverage == 80"

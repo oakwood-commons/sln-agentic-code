@@ -35,6 +35,10 @@ spec:
       type: string
       description: Minimum statement coverage percentage (0-100)
       default: "70"
+    - name: go-version
+      type: string
+      description: Pinned Go toolchain version installed if Go 1.26+ is missing
+      default: "1.26.11"
   tasks:
     - name: fetch-source
       taskRef:
@@ -63,3 +67,5 @@ spec:
           value: $(params.build-pkg)
         - name: min-coverage
           value: $(params.min-coverage)
+        - name: go-version
+          value: $(params.go-version)

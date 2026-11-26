@@ -55,7 +55,7 @@ spec:
             message: "Unsupported CPU architecture (expected amd64 or arm64)"
 
     tools_bin:
-      description: Directory where missing developer tools (hugo, golangci-lint, gosec) are installed
+      description: Directory where missing developer tools (hugo, gh, go, golangci-lint, gosec) are installed
       type: string
       resolve:
         with:
@@ -77,6 +77,18 @@ spec:
           - provider: static
             inputs:
               value: "0.155.2"
+
+    gh_version:
+      description: Pinned GitHub CLI version installed into .tool/bin when missing
+      type: string
+      resolve:
+        with:
+          - provider: parameter
+            inputs:
+              key: gh_version
+          - provider: static
+            inputs:
+              value: "2.106.0"
 
     owner:
       description: GitHub repository owner for configure-github
@@ -118,7 +130,7 @@ spec:
     actions:
       install-tools:
         displayName: Install Repo & CI Tools
-        description: Install Hugo extended, golangci-lint, and gosec across Linux, macOS, and Windows
+        description: Install Hugo extended, gh, Go 1.26+, golangci-lint, and gosec across Linux, macOS, and Windows
         provider: exec
         timeout: 10m
         inputs:
@@ -132,6 +144,8 @@ spec:
               rslvr: tools_bin
             HUGO_VERSION:
               rslvr: hugo_version
+            GH_VERSION:
+              rslvr: gh_version
           command: |
             set -e
             mkdir -p "$TOOLS_BIN"
@@ -141,6 +155,9 @@ spec:
             fi
             export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
 
+            NL="$(printf '\nx')"
+            NL="${NL%x}"
+            CR="$(printf '\r')"
             HUGO_VER_OUT=""
             if command -v hugo >/dev/null 2>&1; then
               HUGO_VER_OUT="$(hugo version 2>/dev/null || true)"
@@ -166,11 +183,13 @@ spec:
                     URL="https://github.com/gohugoio/hugo/releases/download/v${HUGO_VERSION}/${ARCHIVE}"
                     curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
                     pkgutil --expand-full "${TMP_DIR}/${ARCHIVE}" "${TMP_DIR}/expanded"
-                    HUGO_BIN=""
-                    for candidate in $(find "${TMP_DIR}/expanded" -name hugo -type f); do
-                      HUGO_BIN="$candidate"
-                      break
-                    done
+                    FIND_OUT="$(find "${TMP_DIR}/expanded" -name hugo -type f)"
+                    HUGO_BIN="${FIND_OUT%%"$NL"*}"
+                    HUGO_BIN="${HUGO_BIN%"$CR"}"
+                    if [ -z "$HUGO_BIN" ]; then
+                      echo "hugo binary not found inside expanded macOS pkg" >&2
+                      exit 1
+                    fi
                     cp "$HUGO_BIN" "${TOOLS_BIN}/hugo"
                     chmod +x "${TOOLS_BIN}/hugo"
                   elif [ "$TARGET_OS" = "windows" ]; then
@@ -180,13 +199,58 @@ spec:
                     if command -v tar.exe >/dev/null 2>&1; then
                       tar.exe -xf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
                     else
-                      unzip -q "${TMP_DIR}/${ARCHIVE}" -d "$TMP_DIR"
+                      ARCHIVE_PATH="${TMP_DIR}/${ARCHIVE}" DEST_DIR="$TMP_DIR" powershell.exe -NoProfile -Command 'Expand-Archive -LiteralPath $env:ARCHIVE_PATH -DestinationPath $env:DEST_DIR -Force'
                     fi
                     cp "${TMP_DIR}/hugo.exe" "${TOOLS_BIN}/hugo.exe"
                   fi
                 )
                 ;;
             esac
+
+            if command -v gh >/dev/null 2>&1; then
+              GH_VER_RAW="$(gh --version 2>/dev/null || true)"
+              GH_FIRST_LINE="${GH_VER_RAW%%"$NL"*}"
+              GH_FIRST_LINE="${GH_FIRST_LINE%"$CR"}"
+              echo "gh CLI already available: ${GH_FIRST_LINE}"
+            else
+              echo "Installing GitHub CLI v${GH_VERSION} for ${TARGET_OS}/${TARGET_ARCH}..."
+              (
+                TMP_DIR="$(mktemp -d)"
+                trap 'rm -rf "$TMP_DIR"' EXIT
+                if [ "$TARGET_OS" = "linux" ]; then
+                  ARCHIVE="gh_${GH_VERSION}_linux_${TARGET_ARCH}.tar.gz"
+                  URL="https://github.com/cli/cli/releases/download/v${GH_VERSION}/${ARCHIVE}"
+                  curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                  tar -xzf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                  cp "${TMP_DIR}/gh_${GH_VERSION}_linux_${TARGET_ARCH}/bin/gh" "${TOOLS_BIN}/gh"
+                  chmod +x "${TOOLS_BIN}/gh"
+                elif [ "$TARGET_OS" = "darwin" ]; then
+                  ARCHIVE="gh_${GH_VERSION}_macOS_${TARGET_ARCH}.zip"
+                  URL="https://github.com/cli/cli/releases/download/v${GH_VERSION}/${ARCHIVE}"
+                  curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                  unzip -q "${TMP_DIR}/${ARCHIVE}" -d "$TMP_DIR"
+                  cp "${TMP_DIR}/gh_${GH_VERSION}_macOS_${TARGET_ARCH}/bin/gh" "${TOOLS_BIN}/gh"
+                  chmod +x "${TOOLS_BIN}/gh"
+                elif [ "$TARGET_OS" = "windows" ]; then
+                  ARCHIVE="gh_${GH_VERSION}_windows_${TARGET_ARCH}.zip"
+                  URL="https://github.com/cli/cli/releases/download/v${GH_VERSION}/${ARCHIVE}"
+                  curl -fsSL "$URL" -o "${TMP_DIR}/${ARCHIVE}"
+                  if command -v tar.exe >/dev/null 2>&1; then
+                    tar.exe -xf "${TMP_DIR}/${ARCHIVE}" -C "$TMP_DIR"
+                  else
+                    ARCHIVE_PATH="${TMP_DIR}/${ARCHIVE}" DEST_DIR="$TMP_DIR" powershell.exe -NoProfile -Command 'Expand-Archive -LiteralPath $env:ARCHIVE_PATH -DestinationPath $env:DEST_DIR -Force'
+                  fi
+                  FIND_GH="$(find "$TMP_DIR" -name "gh.exe" -type f)"
+                  GH_BIN="${FIND_GH%%"$NL"*}"
+                  GH_BIN="${GH_BIN%"$CR"}"
+                  if [ -z "$GH_BIN" ]; then
+                    echo "gh.exe not found inside extracted archive" >&2
+                    exit 1
+                  fi
+                  cp "$GH_BIN" "${TOOLS_BIN}/gh.exe"
+                fi
+              )
+            fi
 
             scafctl run action install-tools -f ./ci/go-ci/actions.yaml -r "tools_bin=${TOOLS_BIN}"
 
@@ -229,10 +293,29 @@ spec:
             scafctl lint -f ./actions.yaml
             scafctl lint -f ./ci/go-ci/actions.yaml
             scafctl lint -f ./scafctl/solution.yaml
-            if ! cmp -s ./ci/go-ci/actions.yaml ./scafctl/go-ci/actions.yaml; then
+            if [ "$(cat ./ci/go-ci/actions.yaml)" != "$(cat ./scafctl/go-ci/actions.yaml)" ]; then
               echo "ci/go-ci/actions.yaml and scafctl/go-ci/actions.yaml are out of sync" >&2
               exit 1
             fi
+            TMP_TREE="$(mktemp)"
+            trap 'rm -f "$TMP_TREE"' EXIT
+            scafctl run resolver opencode_files -f ./scafctl/solution.yaml -o tree --no-color > "$TMP_TREE"
+            if [ ! -f ./layouts/_partials/opencode-tree.txt ] || [ "$(cat "$TMP_TREE")" != "$(cat ./layouts/_partials/opencode-tree.txt)" ]; then
+              echo "layouts/_partials/opencode-tree.txt is out of sync (run 'scafctl run action docs-serve' or update layouts/_partials/opencode-tree.txt)" >&2
+              exit 1
+            fi
+            SKILLS_DOC="./docs/reference/skills-and-agents.md"
+            SKILLS_CONTENT="$(cat "$SKILLS_DOC")"
+            for f in ./scafctl/user-opencode/skills/*/SKILL.md ./scafctl/user-opencode/skills/*/*.md ./scafctl/user-opencode/agents/*.md ./scafctl/user-opencode/commands/*.md ./scafctl/user-opencode/instructions/*.md; do
+              REL="${f#./scafctl/user-opencode/}"
+              case "$SKILLS_CONTENT" in
+                *"path=\"${REL}\""*) ;;
+                *)
+                  echo "${SKILLS_DOC} is missing a starter-drawer entry for bundled file: ${REL}" >&2
+                  exit 1
+                  ;;
+              esac
+            done
             scafctl package solution -f ./scafctl/solution.yaml --dry-run --skip-tests --no-vendor
 
       test-solutions:
@@ -256,6 +339,7 @@ spec:
         provider: exec
         dependsOn:
           - install-tools
+          - lint-solutions
         timeout: 5m
         inputs:
           passthrough: true
@@ -271,7 +355,7 @@ spec:
             if [ "$TARGET_OS" = "windows" ]; then
               PATH_SEP=";"
             fi
-            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+            export PATH="${TOOLS_BIN}${PATH_SEP}${TOOLS_BIN}/go-sdk/bin${PATH_SEP}${PATH}"
             if [ -f ./site/hugo.yaml ]; then
               cd site
               hugo --gc --minify
@@ -284,6 +368,7 @@ spec:
         description: Start a live-reloading Hugo server at http://localhost:1313
         explicit: true
         provider: exec
+        timeout: 24h
         dependsOn:
           - install-tools
         inputs:
@@ -294,13 +379,22 @@ spec:
             TOOLS_BIN:
               rslvr: tools_bin
           command: |
+            set -e
             PATH_SEP=":"
             if [ "$TARGET_OS" = "windows" ]; then
               PATH_SEP=";"
             fi
-            export PATH="${TOOLS_BIN}${PATH_SEP}${PATH}"
+            export PATH="${TOOLS_BIN}${PATH_SEP}${TOOLS_BIN}/go-sdk/bin${PATH_SEP}${PATH}"
+            TMP_TREE="$(mktemp)"
+            trap 'rm -f "$TMP_TREE"' EXIT
+            scafctl run resolver opencode_files -f ./scafctl/solution.yaml -o tree --no-color > "$TMP_TREE"
+            if [ ! -f ./layouts/_partials/opencode-tree.txt ] || [ "$(cat "$TMP_TREE")" != "$(cat ./layouts/_partials/opencode-tree.txt)" ]; then
+              cp "$TMP_TREE" ./layouts/_partials/opencode-tree.txt
+              chmod 0644 ./layouts/_partials/opencode-tree.txt
+            fi
+            rm -f "$TMP_TREE"
             cd site
-            hugo server -D
+            hugo server -D --renderToMemory --disableFastRender
 
       configure-github:
         displayName: Configure GitHub Repository Settings
@@ -351,3 +445,5 @@ spec:
             message: Default repo should be sln-agentic-code
           - expression: '__output.hugo_version == "0.155.2"'
             message: Default Hugo version should be 0.155.2
+          - expression: '__output.gh_version == "2.106.0"'
+            message: Default GitHub CLI version should be 2.106.0

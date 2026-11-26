@@ -19,7 +19,7 @@ https://github.com/samber/cc-skills-golang (see `../../THIRD-PARTY-NOTICE.txt`).
   and goroutine leaks.
 - Use `go test -race` for shared-state code and `-count=N` for suspected flakes;
   inspect **both** stacks in a race report.
-- Remember `SIGQUIT` dumps stacks AND terminates a Go process -- prefer an
+- Remember `SIGQUIT` dumps stacks AND terminates a Go process; prefer an
   internal `net/http/pprof` endpoint or `dlv` on live processes, and never
   expose `pprof` publicly.
 - Use `go tool pprof` for CPU/heap/block/mutex profiles, redact secrets from
