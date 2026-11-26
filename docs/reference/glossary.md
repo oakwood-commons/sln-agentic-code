@@ -59,7 +59,8 @@ DAGs show up in two important places in this workflow:
 
 ## `scafctl` {#scafctl}
 
-An open-source declarative scaffolding and workflow CLI
+An open-source CLI to **declaratively discover data, shape configuration, and
+run portable workflows for humans and AI agents**
 (**[Installation Guide](https://scafctl.oakwood-commons.org/docs/tutorials/getting-started/#installation)**
 | **[Documentation](https://scafctl.oakwood-commons.org/)**
 | **[`oakwood-commons/scafctl` on GitHub](https://github.com/oakwood-commons/scafctl)**),
