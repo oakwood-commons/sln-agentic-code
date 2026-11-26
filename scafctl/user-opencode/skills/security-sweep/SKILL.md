@@ -1,6 +1,6 @@
 ---
 name: security-sweep
-description: "Use when asked to security-sweep, scan, or audit a whole repo end to end, or to reconcile an external red-team/pentest report against a repo. Runs a scanner battery (govulncheck, gosec, trivy) alongside the security-auditor agent, triages every scanner hit through reproduce-or-retract, produces one findings doc plus one issue draft per confirmed finding, and buckets an external report's findings as fixed/known/declined/untracked."
+description: "Use when asked to security-sweep, scan, or audit a whole repo end to end, or reconcile an external pentest report. Pairs a scanner battery (govulncheck, gosec, trivy) with security-auditor, proves every hit via reproduce-or-retract, and drafts confirmed findings."
 ---
 
 # Security sweep

@@ -70,8 +70,8 @@ spending any CI runs or PR review quota, so Copilot can spend 100% of its Round
     </div>
     <div class="bp-flow-node is-mint">
       <span class="bp-flow-step">MERGE READY // CLEAN + CI GREEN</span>
-      <span class="bp-flow-title">Human Reviews Diff &amp; Clicks Merge</span>
-      <span class="bp-flow-desc">Your single line-by-line code review happens here on the finished PR.</span>
+      <span class="bp-flow-title"><code>/last-look</code> &amp; Human Clicks Merge</span>
+      <span class="bp-flow-desc">60-second plain-English merge brief + 1 to 2 core files to eyeball before clicking Merge.</span>
     </div>
   </div>
 </div>
@@ -114,15 +114,15 @@ With those two settings in place, follow three simple habits:
 > [!CAUTION]
 > **Never let an AI loop on a pull request unattended without an exit condition.**
 
-The `/pr-create`, `/pr-review`, `/pr-autopilot`, and `/review-buster` commands
-enforce four non-negotiable stops:
+The `/pr-create`, `/pr-review`, `/pr-autopilot`, `/review-buster`, and
+`/last-look` commands enforce four non-negotiable stops:
 
 | Safeguard | Rule |
 |---|---|
 | **Design trade-offs** | If a review comment questions an API shape, flag name, or behavior choice with two reasonable answers, **stop immediately and ask the human**. |
 | **3-round circuit breaker** | Cap PR fix loops at **3 rounds maximum**. If Round 3 still raises new comments, stop or run `/review-buster`, which reads the *entire* review history with a different model family, diagnoses the shared root cause, and waits for your approval on one comprehensive plan. |
 | **Quota-error check** | Never treat a Copilot comment saying `"unable to review"` or `"insufficient remaining quota"` as a clean pass. |
-| **Human owns Merge (your one code review)** | `gh pr merge` is set to `"deny"` in `opencode.jsonc`. Because words, deterministic tests, live smoke runs, and `finish-issue` already did the heavy lifting in your terminal, **PR time is the one place you sit down to read the finished diff**, weigh Copilot's comments, and click **Merge** without needing a code editor. |
+| **Human owns Merge (`/last-look` + your final call)** | `gh pr merge` is set to `"deny"` in `opencode.jsonc`. Once a PR is green and drained, ask *"walk me through this PR to merge"* (or run `/last-look`): the AI checks live CI, prod vs. test size, post-review drift or bloat, 3-way conflicts against `origin/main`, and links the **1 to 2 core files** worth reading on GitHub before you click **Merge**. |
 
 ---
 
@@ -143,6 +143,10 @@ When working in your own repository or fork:
 
 # 3. If an external reviewer ever nitpicks one line per round, diagnose the root cause
 /review-buster
+
+# 4. Final 60-second human merge brief (what changes, prod/test size, review drift,
+#    1 to 2 core files to spot-check, squash-commit check, and 3-way conflict check)
+/last-look
 ~~~
 
 *(Need to pause mid-task and pick up tomorrow in a fresh window? Run `/handoff`

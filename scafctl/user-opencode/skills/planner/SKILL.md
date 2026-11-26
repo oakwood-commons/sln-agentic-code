@@ -1,6 +1,6 @@
 ---
 name: planner
-description: "Use automatically before implementing, planning, or scoping any non-trivial feature, refactor, architecture change, or issue, even when asked in plain English without a slash command. Inspects the real codebase first, skeptically questions whether the change fits project scope, challenges weak 'how' suggestions, checks prior art (best over easiest), settles open edge cases, and produces a blueprint or delegates to create-issue."
+description: "Use automatically before implementing, planning, or scoping any non-trivial feature, refactor, or issue: inspects live code first, questions scope and weak 'how' ideas, settles edge cases, and produces a blueprint or delegates to create-issue."
 ---
 
 # Skeptical Codebase Triage & Planning

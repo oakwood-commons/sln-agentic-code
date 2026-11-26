@@ -1,6 +1,6 @@
 ---
 name: create-issue
-description: "Use when drafting an issue, bug report, feature request, or user story. Explores the codebase first, structures every issue with Plain English at the top for fast human review and Technical Context at the bottom for accurate AI implementation, previews the draft for approval, and delegates filing to github-issues, jira-issues, or local-issues."
+description: "Use when drafting an issue, bug report, feature request, or user story: explores live code first, writes Plain English at the top for human review plus Technical Context at the bottom for AI execution, previews in chat, and files via github-issues, jira-issues, or local-issues."
 ---
 
 # Two-Layer Issue Authoring (`create-issue`)

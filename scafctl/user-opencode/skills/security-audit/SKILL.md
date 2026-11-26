@@ -1,6 +1,6 @@
 ---
 name: security-audit
-description: "Use when reasoning about a security vulnerability: auditing code for one, chasing a red-team or pentest report, judging whether a suspected leak is real, or fixing a credential, auth, or multi-tenant flaw found during review. Covers proving a finding by execution, discarding non-findings, and the bug classes static review misses. The security-auditor agent loads this for whole-codebase audits; load it directly when fixing inline."
+description: "Use when auditing code for vulnerabilities, evaluating a pentest report, judging whether a suspected leak is real, or fixing an auth, credential, or multi-tenant flaw inline. Enforces reproduce-or-retract proof and checks structural bug classes static review misses."
 ---
 
 # Security audit

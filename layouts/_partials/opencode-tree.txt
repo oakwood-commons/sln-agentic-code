@@ -18,6 +18,7 @@
     │   ├── finish-issue.md: slash command
     │   ├── handoff.md: slash command
     │   ├── interview.md: slash command
+    │   ├── last-look.md: slash command
     │   ├── plan.md: slash command
     │   ├── pr-autopilot.md: slash command
     │   ├── pr-create.md: slash command
@@ -41,6 +42,7 @@
         ├── grilling/SKILL.md: skill
         ├── herdr/SKILL.md: skill
         ├── jira-issues/SKILL.md: skill
+        ├── last-look/SKILL.md: skill
         ├── local-issues/SKILL.md: skill
         ├── markdown/SKILL.md: skill
         ├── planner/SKILL.md: skill

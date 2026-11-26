@@ -141,7 +141,7 @@ other harnesses:
 |---|---|---|---|---|
 | **Repo Contract** | `AGENTS.md` + `REVIEW.md` | `AGENTS.md` + `REVIEW.md` | `AGENTS.md` (or pointer in `CLAUDE.md`) + `REVIEW.md` | `AGENTS.md` + `.github/copilot-instructions.md` -> `REVIEW.md` |
 | **Standing Rules** | `~/.config/opencode/instructions/workflow-policy.md` | `~/.gemini/config/rules/workflow-policy.md` | `~/.claude/CLAUDE.md` | User rules / `.cursor/rules/*.mdc` |
-| **Personal Skills** | `~/.config/opencode/skills/*/SKILL.md` (25 domain skills) | `~/.gemini/config/skills/*/SKILL.md` (25 domain + 14 agent/command companion skills) | `~/.claude/skills/*/SKILL.md` | `.cursor/rules/*.mdc` or `.github/skills/*/SKILL.md` |
+| **Personal Skills** | `~/.config/opencode/skills/*/SKILL.md` (26 domain skills) | `~/.gemini/config/skills/*/SKILL.md` (26 domain + 14 agent/command companion skills) | `~/.claude/skills/*/SKILL.md` | `.cursor/rules/*.mdc` or `.github/skills/*/SKILL.md` |
 | **Isolated Subagents** | `~/.config/opencode/agents/*.md` | `~/.gemini/config/agents/*/agent.md` (`invoke_subagent`, `Model: "inherit"`) | `.claude/agents/*.md` (`Task` tool) | Background / review agent modes |
 | **Slash Commands** | `~/.config/opencode/commands/*.md` | Built-in (`/plan`, `/boost`, `/swarm`) + companion skills | `~/.claude/commands/*.md` | `.github/prompts/*.prompt.md` |
 | **`scafctl` MCP** | `opencode.jsonc` (`mcp.servers.scafctl`) | `~/.gemini/config/mcp_config.json` (`mcpServers.scafctl`) | `claude_desktop_config.json` / `.mcp.json` | `.vscode/mcp.json` / `.cursor/mcp.json` |

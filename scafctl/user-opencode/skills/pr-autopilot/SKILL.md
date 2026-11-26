@@ -1,6 +1,6 @@
 ---
 name: pr-autopilot
-description: "Autonomous GitHub PR review and CI convergence loop: polls all four PR feedback surfaces (GraphQL reviewThreads, review bodies including collapsed Copilot details, general comments, and CI checks), batches mechanical fixes into one push + PR body sync, replies and resolves nits without pushing, enforces the Copilot credit gate, and stops ONLY when merge-ready, a design call is needed, or the 3-strike cap is hit. Never merges."
+description: "Autonomous GitHub PR review and CI convergence loop: polls all four PR feedback surfaces, batches mechanical fixes into one push + PR body sync, resolves nits without pushing, protects Copilot quota, and stops when merge-ready, blocked, or at 3 strikes. Never merges."
 ---
 
 # PR Autopilot: Autonomous PR & Copilot Convergence Loop

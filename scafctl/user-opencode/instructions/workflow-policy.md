@@ -20,8 +20,9 @@
     `security-sweep` for whole-repo audits) when investigating or fixing
     security flaws, `publish-hygiene` before publishing to public repos,
     `finish-issue` automatically before opening a pull request, `pr-autopilot`
-    when driving an open PR through CI and Copilot reviews, and `work-herd` when
-    asked for a Herdr plan/DAG or multi-worker wave.
+    when driving an open PR through CI and Copilot reviews, `last-look` when
+    walking the human through ready PRs to merge one at a time, and `work-herd`
+    when asked for a Herdr plan/DAG or multi-worker wave.
 - **Engineering judgment (best over easiest, never rubber-stamp *how*)**:
   - Honor libraries, stack choices, and constraints the user already stated
     without grilling them backwards on settled basics.

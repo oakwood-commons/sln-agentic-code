@@ -15,9 +15,9 @@ Coordinator session inside that window spins up **isolated worker worktrees
 grouped together right underneath your repo in the left sidebar**, each covering
 a separate issue that can safely run in parallel.
 
-Four bundled pieces in `agentic-code` (`herdr`, `work-herd`, `pr-autopilot`,
-and `waiter`) power that loop alongside `github-issues`, `jira-issues`, and
-`local-issues`:
+Five bundled pieces in `agentic-code` (`herdr`, `work-herd`, `pr-autopilot`,
+`waiter`, and `last-look`) power that loop alongside `github-issues`,
+`jira-issues`, and `local-issues`:
 
 1. **One Main Repo Window + Grouped Workers (`herdr` skill):** You stay in one
    Herdr window rooted in your main checkout. Parallel worker worktrees nest
@@ -33,6 +33,11 @@ and `waiter`) power that loop alongside `github-issues`, `jira-issues`, and
    drives its own PR through GitHub Actions CI and GitHub Copilot reviews to
    merge-ready without human babysitting (and without ever running
    `gh pr merge`).
+4. **One-PR-at-a-Time Human Merge Walkthrough (`last-look` skill):** When a wave
+   finishes and 3 or 4 PRs are ready at once, `/last-look` briefs **strictly one
+   PR per turn** in plain English (what changes, prod vs. test size, post-review
+   drift, 1 to 2 core files to eyeball, and a live 3-way conflict check) and
+   re-checks the next PR after each merge.
 
 ~~~tree
 Herdr Window (Left Sidebar)
@@ -70,8 +75,8 @@ Herdr Window (Left Sidebar)
   <div class="bp-flow-row cols-3-plain">
     <div class="bp-flow-node is-mint">
       <span class="bp-flow-step">INTERRUPT 01 // DONE</span>
-      <span class="bp-flow-title">PR Merge-Ready</span>
-      <span class="bp-flow-desc">CI green + Copilot drained. Review diff once, click Merge, slot refills from DAG.</span>
+      <span class="bp-flow-title"><code>/last-look</code> Merge Queue</span>
+      <span class="bp-flow-desc">Walks you through ready PRs 1 at a time, cleans worktrees on merge, and refills the DAG slot.</span>
     </div>
     <div class="bp-flow-node">
       <span class="bp-flow-step">INTERRUPT 02 // BLOCKED</span>
@@ -187,7 +192,7 @@ automatically hands its new PR to **`pr-autopilot`**:
 
 ---
 
-## 4. Coordinator Ground-Truth Check & Your Single Merge Step
+## 4. Coordinator Ground-Truth Check & One-at-a-Time Merge Walkthrough (`last-look`)
 
 Across real multi-agent runs, workers occasionally claim `"DONE"` prematurely
 (for example, missing a page-2 comment or reporting before a check finishes).
@@ -196,12 +201,26 @@ ground truth** (`headRefOid`, `0` unresolved GraphQL threads, `0` open review
 body findings, green CI, and drained Copilot timeline) and sends you the full
 clickable PR URL.
 
-Your job stays calm even with four workers running on a second workstation
-(`herdr --remote <host>`):
-1. **Ignore healthy workers** while they code, test, and address mechanical PR
-   feedback.
-2. **Answer `blocked` design questions** when Herdr's sidebar flags a real
-   product choice.
-3. **Read each `DONE` PR diff once on GitHub and click Merge**, watching the
-   coordinator pull `main`, clean up the worktree, and launch the next issue
-   from your Herdr DAG.
+When several PRs finish around the same time, reviewing four walls of test files
+back-to-back causes review fatigue. Ask your coordinator:
+
+~~~text
+Walk me through the ready PRs to merge.
+~~~
+
+*(Or run `/last-look`.)* The `last-look` skill steps through your merge queue
+**strictly one PR per turn**:
+
+1. **Verifies live merge readiness:** Fetches the PR ref and runs a fresh
+   read-only 3-way merge check (`git merge-tree --write-tree <pr_head>
+   origin/main`), separates production LOC from test/doc LOC, checks whether
+   post-review commits fixed real bugs or added bloat, verifies the
+   squash-commit `PR_TITLE` and `PR_BODY`, and links the **1 to 2 core files**
+   worth reading on GitHub.
+2. **Waits for your call on that single PR:** Reply `merged` once you click
+   Merge on GitHub (or `trim <X>`, `hold`, or `next`).
+3. **Cleans up & re-checks the next PR against updated `main`:** Confirming
+   `MERGED` on GitHub, it tears down the merged worktree, fast-forwards local
+   `main`, provisions any newly unblocked Wave 2 ticket in your Herdr DAG, and
+   re-runs `git merge-tree` on the **next** ready PR against the freshly updated
+   `main` before presenting its brief.

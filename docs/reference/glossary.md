@@ -146,15 +146,16 @@ An **agent** combines a role prompt, a model choice, and a set of allowed tools:
 
 A short `SKILL.md` playbook (such as `planner`, `create-issue`, `github-issues`,
 `jira-issues`, `local-issues`, `stepwise-interview`, `wait-what`, `tdd`,
-`codebase-design`, `go`, `security-audit`, `diagnosing-bugs`, or `finish-issue`)
-whose `description:` header is exposed to the model on every turn alongside a
-`skill` tool. When you write in plain English, the model decides in its inner
-monologue which playbooks to load, keeping prompts short without stuffing 2,000
-lines of rules into every turn. Because prose matching is **probabilistic**
-(strong cloud models invoke skills reliably, while smaller models can
-occasionally skip a tool call), pair skills with always-on `workflow-policy.md`
-rules and optional [slash commands](#slash-command). Browse all 25 bundled
-skills and see how prompts, rules, skills, subagents, and commands differ in
+`codebase-design`, `go`, `security-audit`, `diagnosing-bugs`, `finish-issue`, or
+`last-look`) whose `description:` header is exposed to the model on every turn
+alongside a `skill` tool. When you write in plain English, the model decides in
+its inner monologue which playbooks to load, keeping prompts short without
+stuffing 2,000 lines of rules into every turn. Because prose matching is
+**probabilistic** (strong cloud models invoke skills reliably, while smaller
+models can occasionally skip a tool call), pair skills with always-on
+`workflow-policy.md` rules and optional [slash commands](#slash-command). Browse
+all 26 bundled skills and see how prompts, rules, skills, subagents, and
+commands differ in
 [Skills, Agents & Commands](/docs/reference/skills-and-agents.md).
 
 ---
@@ -163,7 +164,8 @@ skills and see how prompts, rules, skills, subagents, and commands differ in
 
 A **deterministic** shortcut you type in chat (`/plan`, `/create-issue`,
 `/finish-issue`, `/review`, `/pr-create`, `/pr-review`, `/pr-autopilot`,
-`/review-buster`, `/handoff`, `/interview`, `/wait-what`) when you want to force
+`/last-look`, `/review-buster`, `/handoff`, `/interview`, `/wait-what`) when you
+want to force
 a specific subagent or prompt expansion 100% of the time, especially on faster
 or smaller local models where prose skill-selection can be less consistent.
 

@@ -8,7 +8,7 @@ description: "Use when asked to 'come up with a Herdr plan', build an issue depe
 Orchestrate a shortlist of issues across isolated Git worktrees in
 [Herdr](https://herdr.dev) (`HERDR_ENV=1`). Composes with `herdr --skill` (live
 CLI syntax), `github-issues`, `jira-issues`, `local-issues`, `planner`,
-`finish-issue`, `git-github-workflow`, `pr-autopilot`, and `waiter`.
+`finish-issue`, `git-github-workflow`, `pr-autopilot`, `last-look`, and `waiter`.
 
 ## Golden Rules
 
@@ -131,7 +131,10 @@ Before notifying the human that a PR is **Merge-Ready**, independently verify:
 
 Always include **full clickable URLs** (`https://github.com/<owner>/<repo>/pull/<N>`)
 when reporting **Merge-Ready (`DONE`)**, **Blocked / Design Question**, or
-**Stalemate** to the human.
+**Stalemate** to the human. When the human sits down to review ready PRs (or
+asks *"walk me through the PRs to merge"* / `/last-look`), load `last-look` to
+present **strictly one PR per turn** with live CI, prod/test LOC, review drift,
+1 to 2 core files to spot-check, and a fresh `git merge-tree` conflict check.
 
 ---
 
